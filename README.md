@@ -1,4 +1,4 @@
-<img width="1672" height="941" alt="FechaTudoPLusImg" src="https://github.com/user-attachments/assets/ad431e58-ffb2-4fa2-bb89-443841cb41e3" />
+<img width="1672" height="941" alt="NovoFechaTudoAppsPrincipal" src="https://github.com/user-attachments/assets/476a26ac-8034-4510-9347-756668396c3c" />
 
 # Fecha Tudo Plus
 
