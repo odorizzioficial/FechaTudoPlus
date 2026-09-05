@@ -303,8 +303,6 @@ class AppMonitor(
         )
     }
 
-    fun userApps(): List<InstalledApp> = PackageUtils.getUserApps(context)
-
     /**
      * Lista do seletor. Sem o botão do Android, só os aplicativos instalados
      * pelo usuário. Com o botão, entra tudo que está instalado no aparelho.

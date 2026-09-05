@@ -13,9 +13,6 @@ import com.bgcontrol.plus.model.InstalledApp
 
 object PackageUtils {
 
-    /** Somente aplicativos instalados pelo usuário — processos e apps do sistema ficam de fora. */
-    fun getUserApps(context: Context): List<InstalledApp> = getApps(context, includeSystem = false)
-
     /**
      * Lista de aplicativos para o seletor.
      *
@@ -62,25 +59,29 @@ object PackageUtils {
     }
 
     /**
-     * Aplicativos que o "Fechar Tudo" encerra e que ficam encerrados.
+     * Aplicativos que fazem sentido listar e encerrar.
      *
-     * Só os instalados pelo usuário. Apps que vieram de fábrica ficam de fora
-     * mesmo quando atualizados pela loja: o sistema costuma religá-los logo
-     * depois do encerramento, e vê-los reaparecendo na lista dá a impressão de
-     * que o aplicativo não funcionou. Também ficam de fora os persistentes.
+     * Entram os instalados pelo usuário e também os que vieram de fábrica mas
+     * têm tela própria — YouTube, Chrome, os apps da Samsung e afins. Eles são
+     * encerrados normalmente e o usuário os reconhece como "seus aplicativos".
+     *
+     * Ficam de fora os componentes de sistema sem interface (serviços que o
+     * Android religa em seguida, dando a impressão de que nada funcionou) e os
+     * marcados como persistentes, que não podem ser encerrados.
      */
-    private fun isKillableApp(info: ApplicationInfo): Boolean {
-        val persistent = info.flags and ApplicationInfo.FLAG_PERSISTENT != 0
-        return isUserApp(info) && !persistent
+    private fun isKillableApp(pm: PackageManager, info: ApplicationInfo): Boolean {
+        if (info.flags and ApplicationInfo.FLAG_PERSISTENT != 0) return false
+        if (isUserApp(info)) return true
+        return pm.getLaunchIntentForPackage(info.packageName) != null
     }
 
-    /** Lista usada pela aba Em execução. */
+    /** Lista usada pela aba Em execução e pelo seletor de aplicativos. */
     fun getKillableApps(context: Context): List<InstalledApp> {
         val pm = context.packageManager
         val launcher = getDefaultLauncher(context)
         return pm.getInstalledApplications(PackageManager.GET_META_DATA)
             .asSequence()
-            .filter { isKillableApp(it) }
+            .filter { isKillableApp(pm, it) }
             .filter { it.packageName != context.packageName }
             .map {
                 InstalledApp(
