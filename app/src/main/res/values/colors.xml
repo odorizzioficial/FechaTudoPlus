@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- background do DESIGN.md — evita flash branco antes do Compose desenhar -->
+    <color name="window_background">#141317</color>
+    <!-- Compatibilidade com pastas antigas: ver drawable/ic_launcher_foreground.xml -->
+    <color name="ic_launcher_background">#1565E8</color>
+</resources>

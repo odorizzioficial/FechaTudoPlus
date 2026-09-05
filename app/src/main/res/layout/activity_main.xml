@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A raiz é uma FrameLayout para que a barra de vidro possa flutuar sobre o
+  conteúdo: o LiquidGlassView captura o desenho do ComposeView indicado em
+  backdropSourceId e refrata o que está atrás dele.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Todo o app em Compose: telas, fundo e gestos -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/content_compose"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Barra inferior flutuante em vidro líquido -->
+    <com.example.liquidglass.LiquidGlassView
+        android:id="@+id/glass_nav"
+        android:layout_width="match_parent"
+        android:layout_height="66dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:adaptiveTint="true"
+        app:backdropSourceId="@id/content_compose"
+        app:bevelWidth="14dp"
+        app:cornerRadius="28dp"
+        app:dispersionStrength="0.10"
+        app:glassMaterial="regular"
+        app:refractionHeight="44dp"
+        app:sensorHighlight="true">
+
+        <!-- Ícones e rótulos das abas, desenhados dentro do vidro -->
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/nav_compose"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </com.example.liquidglass.LiquidGlassView>
+</FrameLayout>

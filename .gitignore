@@ -1,0 +1,21 @@
+# Gradle e build
+.gradle
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Android Studio
+*.iml
+/.idea
+local.properties
+/local.properties
+
+# Chave de assinatura — NUNCA vai para o repositório.
+# Quem tiver esse arquivo e a senha pode publicar atualizações no seu nome.
+*.jks
+*.keystore
+keystore.properties
+
+.DS_Store
