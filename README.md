@@ -1,3 +1,5 @@
+<img width="1672" height="941" alt="NovoFechaTudoAppsPrincipal" src="https://github.com/user-attachments/assets/476a26ac-8034-4510-9347-756668396c3c" />
+
 # Fecha Tudo Plus
 
 App Android nativo (Kotlin + Jetpack Compose) que mostra quais aplicativos estão **realmente** rodando no seu aparelho e devolve o controle deles para você. Encerra apps em segundo plano, protege os que não podem ser fechados, bloqueia os que insistem em voltar e agenda limpezas para acontecerem sozinhas. Usa o **Shizuku** para permissões privilegiadas, sem root. Todo o estado fica salvo localmente (Room/SQLite) — sem servidor, sem conta, sem coleta de dados.
