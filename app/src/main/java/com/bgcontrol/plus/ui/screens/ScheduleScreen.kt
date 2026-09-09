@@ -234,19 +234,22 @@ fun ScheduleScreen(
             initialDays = editando?.daysOfWeek ?: 0,
             initialRepeat = editando?.repeatEnabled ?: true,
             initialDate = editando?.runAtDate,
+            initialInterval = editando?.intervalSeconds,
             confirmLabel = stringResource(
                 if (editando == null) R.string.save_time else R.string.save_changes
             ),
             onDismiss = { fecharAssistente() },
-            onSave = { hora, minuto, segundo, dias, repetir, data ->
+            onSave = { hora, minuto, segundo, dias, repetir, data, intervalo ->
                 val alvo = editando
                 if (alvo == null) {
                     viewModel.createGroup(
-                        nome, modo, hora, minuto, segundo, dias, repetir, data, escolhidos
+                        nome, modo, hora, minuto, segundo, dias,
+                        repetir, data, intervalo, escolhidos
                     )
                 } else {
                     viewModel.updateGroup(
-                        alvo, nome, modo, hora, minuto, segundo, dias, repetir, data, escolhidos
+                        alvo, nome, modo, hora, minuto, segundo, dias,
+                        repetir, data, intervalo, escolhidos
                     )
                 }
                 fecharAssistente()
@@ -307,13 +310,25 @@ private fun GroupCard(
                         .weight(1f)
                         .padding(start = 12.dp)
                 ) {
-                    Text(
-                        text = group.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = group.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        // A contagem sobe para o topo do cartão: é o número que
+                        // diz de imediato quantos aplicativos o grupo trata,
+                        // sem precisar abrir a lista.
+                        StatusPill(
+                            text = apps.size.toString(),
+                            color = cor,
+                            showDot = false,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
                     Text(
                         text = String.format(
                             "%02d:%02d:%02d",
@@ -456,6 +471,14 @@ private fun GroupCard(
 /** Texto da repetição: "Todo dia" ou as iniciais dos dias marcados. */
 @Composable
 private fun diasDaSemana(group: ScheduleGroupEntity): String {
+    group.intervalSeconds?.let { total ->
+        val (valor, unidade) = when {
+            total % 3600 == 0 -> total / 3600 to R.string.unit_hours
+            total % 60 == 0 -> total / 60 to R.string.unit_minutes
+            else -> total to R.string.unit_seconds
+        }
+        return stringResource(R.string.interval_every, valor, stringResource(unidade))
+    }
     if (!group.repeatEnabled) {
         val data = group.runAtDate ?: return stringResource(R.string.schedule_daily)
         val formato = DateFormat.getDateInstance(DateFormat.MEDIUM)

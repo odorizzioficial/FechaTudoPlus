@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.PriorityHigh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -34,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,8 +57,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bgcontrol.plus.R
 import com.bgcontrol.plus.preferences.AppLanguage
+import com.bgcontrol.plus.quick.QuickNav
 import com.bgcontrol.plus.shizuku.ShizukuState
+import com.bgcontrol.plus.ui.components.AppTab
 import com.bgcontrol.plus.ui.components.GlassCard
+import com.bgcontrol.plus.ui.components.accent
+import com.bgcontrol.plus.ui.theme.LocalDarkTheme
+import com.bgcontrol.plus.ui.theme.Palette
 import com.bgcontrol.plus.ui.theme.glassContainerColor
 import com.bgcontrol.plus.ui.components.ScreenHeader
 import com.bgcontrol.plus.ui.components.StatusPill
@@ -74,6 +81,7 @@ fun SettingsScreen(
     var appearanceOpen by remember { mutableStateOf(false) }
     var aboutOpen by remember { mutableStateOf(false) }
     var tileManualDialog by remember { mutableStateOf(false) }
+    var notificationsOpen by remember { mutableStateOf(false) }
 
     // Sem isto, voltar da tela do Android sobre bateria deixaria o "!" preso.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -83,6 +91,35 @@ fun SettingsScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Segurar a bolha por três segundos abre esta tela direto. A bandeira é
+    // consumida na hora para que voltar às Configurações não reabra sozinho.
+    val abrirBolha by QuickNav.abrirConfiguracoesBolha.collectAsStateWithLifecycle()
+    LaunchedEffect(abrirBolha) {
+        if (abrirBolha) {
+            notificationsOpen = true
+            QuickNav.consumir()
+        }
+    }
+
+    if (notificationsOpen) {
+        NotificationsScreen(
+            settings = state.settings,
+            overlayAllowed = state.overlayAllowed,
+            notificationsAllowed = state.notificationsAllowed,
+            onBack = { notificationsOpen = false },
+            onQuickTile = { viewModel.requestQuickTile { tileManualDialog = true } },
+            onPersistentChange = viewModel::setPersistentNotification,
+            onBubbleChange = viewModel::setBubbleEnabled,
+            onRequestOverlay = viewModel::requestOverlayPermission,
+            onRequestNotifications = viewModel::openNotificationSettings,
+            onExcludedChange = viewModel::setBubbleExcluded,
+            onBubbleOpacityChange = viewModel::setBubbleOpacity,
+            onBubbleSizeChange = viewModel::setBubbleSize,
+            modifier = modifier
+        )
+        return
     }
 
     if (aboutOpen) {
@@ -186,6 +223,8 @@ fun SettingsScreen(
         item {
             SettingsCard(
                 icon = Icons.Rounded.BatteryChargingFull,
+                iconTint = Palette.AccentSchedule.takeIf { LocalDarkTheme.current }
+                    ?: Palette.LightAccentSchedule,
                 title = stringResource(R.string.battery_optimization),
                 subtitle = if (state.batteryOptimized) {
                     stringResource(R.string.battery_configured)
@@ -206,37 +245,22 @@ fun SettingsScreen(
             )
         }
 
-        // Bloco das Configurações Rápidas: fecha tudo sem abrir o aplicativo.
+        // Tudo que encerra sem abrir o app: bloco, notificação fixa e bolha.
         item {
             SettingsCard(
-                icon = Icons.Rounded.Dashboard,
-                title = stringResource(R.string.quick_tile_title),
-                subtitle = stringResource(R.string.quick_tile_subtitle),
-                // Já adicionado: o cartão fica apagado e não pede nada.
-                // Se o usuário remover o bloco, ele volta a oferecer o "+".
-                enabled = !state.settings.quickTileAdded,
-                onClick = { viewModel.requestQuickTile { tileManualDialog = true } },
-                trailing = {
-                    if (state.settings.quickTileAdded) {
-                        Text(
-                            text = stringResource(R.string.quick_tile_added),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Rounded.Add,
-                            contentDescription = stringResource(R.string.quick_tile_add),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                icon = Icons.Rounded.Notifications,
+                iconTint = AppTab.BLOCKED.accent(),
+                title = stringResource(R.string.notifications_title),
+                subtitle = stringResource(R.string.notifications_subtitle),
+                onClick = { notificationsOpen = true },
+                trailing = { ChevronIcon() }
             )
         }
 
         item {
             SettingsCard(
                 icon = Icons.Rounded.Language,
+                iconTint = AppTab.RESTRICTED.accent(),
                 title = stringResource(R.string.language),
                 subtitle = "${state.settings.language.flag} ${state.settings.language.displayName}",
                 onClick = { languageDialog = true },
@@ -247,6 +271,7 @@ fun SettingsScreen(
         item {
             SettingsCard(
                 icon = Icons.Rounded.DarkMode,
+                iconTint = AppTab.RUNNING.accent(),
                 title = stringResource(R.string.appearance),
                 subtitle = stringResource(R.string.appearance_subtitle),
                 onClick = { appearanceOpen = true },
@@ -257,6 +282,7 @@ fun SettingsScreen(
         item {
             SettingsCard(
                 icon = Icons.Rounded.Info,
+                iconTint = AppTab.SETTINGS.accent(),
                 title = stringResource(R.string.about),
                 subtitle = stringResource(R.string.version_format, state.versionName),
                 onClick = { aboutOpen = true },

@@ -61,8 +61,12 @@ class BlockedViewModel(
     fun addApps(apps: List<InstalledApp>) {
         viewModelScope.launch {
             repository.addBlocked(apps)
+            // A lista do monitor é atualizada aqui mesmo: o Flow do banco chega
+            // um instante depois, e nesse intervalo o encerramento ainda
+            // liberaria o pacote recém-bloqueado.
+            monitor.pacotesBloqueados = monitor.pacotesBloqueados + apps.map { it.packageName }
             // Bloquear não é só encerrar: o app também deixa de poder se religar.
-            apps.forEach { monitor.setBackgroundRestricted(it.packageName, true) }
+            apps.forEach { monitor.aplicarBloqueio(it.packageName) }
             _uiState.value = _uiState.value.copy(message = UiMessage.Added(apps.size))
         }
     }
@@ -70,15 +74,24 @@ class BlockedViewModel(
     fun setEnabled(packageName: String, enabled: Boolean) {
         viewModelScope.launch {
             repository.setBlockedEnabled(packageName, enabled)
-            monitor.setBackgroundRestricted(packageName, enabled)
+            if (enabled) {
+                monitor.pacotesBloqueados = monitor.pacotesBloqueados + packageName
+                monitor.aplicarBloqueio(packageName)
+            } else {
+                monitor.pacotesBloqueados = monitor.pacotesBloqueados - packageName
+                monitor.removerBloqueio(packageName)
+            }
         }
     }
 
     fun unblock(app: BlockedAppEntity) {
         viewModelScope.launch {
-            // Desbloquear devolve o app ao estado normal do Android.
-            monitor.setBackgroundRestricted(app.packageName, false)
+            // Desbloquear devolve o app ao estado normal do Android: sai da
+            // suspensão, recupera as permissões de segundo plano e volta ao
+            // balde de uso normal.
             repository.removeBlocked(app.packageName)
+            monitor.pacotesBloqueados = monitor.pacotesBloqueados - app.packageName
+            monitor.removerBloqueio(app.packageName)
             _uiState.value = _uiState.value.copy(message = UiMessage.Removed(app.appName))
         }
     }

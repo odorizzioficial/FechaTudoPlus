@@ -1,5 +1,7 @@
 package com.bgcontrol.plus
 
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.widget.FrameLayout
 import androidx.activity.enableEdgeToEdge
@@ -50,6 +52,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.bgcontrol.plus.preferences.AppLanguage
 import com.bgcontrol.plus.preferences.AppSettings
+import com.bgcontrol.plus.quick.QuickNav
 import com.bgcontrol.plus.ui.components.AppTab
 import com.bgcontrol.plus.ui.components.BottomNavBar
 import com.bgcontrol.plus.ui.components.BottomNavContent
@@ -78,12 +81,21 @@ class MainActivity : AppCompatActivity() {
     /** Aba atual, compartilhada entre o conteúdo e a barra dentro do vidro. */
     private val selectedTab: MutableState<AppTab> = mutableStateOf(AppTab.RUNNING)
 
+    /**
+     * Pedido da permissão de notificações.
+     *
+     * Sem ela, a partir do Android 13, a notificação fixa nunca aparecia: o
+     * serviço subia normalmente, a notificação era montada e o sistema a
+     * descartava em silêncio. Nada no aplicativo pedia essa permissão.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
         val container = (application as BgControlApp).container
+
+        tratarIntent(intent)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -131,7 +143,13 @@ class MainActivity : AppCompatActivity() {
                         onOnboardingDone = ::concluirOnboarding,
                         // Sem vidro líquido, a barra é desenhada aqui dentro.
                         drawNavBar = !settings.glassEnabled,
-                        showOnboarding = !settings.onboardingDone
+                        showOnboarding = !settings.onboardingDone,
+                        // O convite da sobreposição só aparece depois da
+                        // apresentação inicial, uma única vez, e some assim que
+                        // a permissão for concedida por qualquer caminho.
+                        showOverlayInvite = false,
+                        onOverlayAllow = {},
+                        onOverlayDismiss = {}
                     )
                   }
                 }
@@ -157,6 +175,21 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        tratarIntent(intent)
+    }
+
+    /** O toque longo na bolha chega aqui e leva direto aos ajustes dela. */
+    private fun tratarIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(QuickNav.EXTRA_ABRIR_BOLHA, false) == true) {
+            selectedTab.value = AppTab.SETTINGS
+            QuickNav.pedirConfiguracoesBolha()
+            intent.removeExtra(QuickNav.EXTRA_ABRIR_BOLHA)
         }
     }
 
@@ -189,7 +222,10 @@ private fun AppContent(
     onLanguageChange: (AppLanguage) -> Unit,
     onOnboardingDone: () -> Unit,
     drawNavBar: Boolean,
-    showOnboarding: Boolean
+    showOnboarding: Boolean,
+    showOverlayInvite: Boolean,
+    onOverlayAllow: () -> Unit,
+    onOverlayDismiss: () -> Unit
 ) {
     var onboardingVisivel by remember(showOnboarding) { mutableStateOf(showOnboarding) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -279,6 +315,28 @@ private fun AppContent(
             onFinish = {
                 onboardingVisivel = false
                 onOnboardingDone()
+            }
+        )
+    }
+
+    // Convite logo no começo: sem a sobreposição a bolha não existe, e o
+    // usuário só descobriria isso ao ligar o recurso e não ver nada. Recusar é
+    // legítimo — nesse caso o aviso vermelho continua na tela de notificações.
+    if (!onboardingVisivel && showOverlayInvite) {
+        AlertDialog(
+            onDismissRequest = onOverlayDismiss,
+            containerColor = glassContainerColor(),
+            title = { Text(stringResource(R.string.overlay_permission)) },
+            text = { Text(stringResource(R.string.overlay_invite_message)) },
+            confirmButton = {
+                TextButton(onClick = onOverlayAllow) {
+                    Text(stringResource(R.string.allow))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onOverlayDismiss) {
+                    Text(stringResource(R.string.not_now))
+                }
             }
         )
     }

@@ -27,6 +27,8 @@ data class ScheduleGroupEntity(
     val daysOfWeek: Int = 0,
     @ColumnInfo(defaultValue = "1") val repeatEnabled: Boolean = true,
     val runAtDate: Long? = null,
+    /** Repetição por intervalo, em segundos. Nulo = usa o horário fixo. */
+    val intervalSeconds: Int? = null,
     val isEnabled: Boolean = true,
     val lastRunAt: Long? = null
 ) {

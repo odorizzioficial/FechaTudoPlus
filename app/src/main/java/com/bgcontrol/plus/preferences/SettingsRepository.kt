@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -64,7 +65,20 @@ data class AppSettings(
     val onboardingDone: Boolean = false,
     val defaultsSeeded: Boolean = false,
     val batteryDialogShown: Boolean = false,
-    val quickTileAdded: Boolean = false
+    val quickTileAdded: Boolean = false,
+    val persistentNotification: Boolean = false,
+    val bubbleEnabled: Boolean = false,
+    /** Pacotes em que a bolha não aparece. */
+    val bubbleExcluded: Set<String> = emptySet(),
+    /** Opacidade da bolha, de 20 (quase invisível) a 100 (sólida). */
+    val bubbleOpacity: Int = 90,
+    /** Diâmetro da bolha em dp. */
+    val bubbleSize: Int = 56,
+    /** Última posição em que o usuário largou a bolha, em pixels. */
+    val bubbleX: Int = 0,
+    val bubbleY: Int = 300,
+    /** True depois que o convite de sobreposição já foi mostrado uma vez. */
+    val overlayPromptShown: Boolean = false
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -85,6 +99,14 @@ class SettingsRepository(private val context: Context) {
         val DEFAULTS_SEEDED = booleanPreferencesKey("defaults_seeded")
         val BATTERY_DIALOG = booleanPreferencesKey("battery_dialog_shown")
         val QUICK_TILE_ADDED = booleanPreferencesKey("quick_tile_added")
+        val PERSISTENT_NOTIFICATION = booleanPreferencesKey("persistent_notification")
+        val BUBBLE_ENABLED = booleanPreferencesKey("bubble_enabled")
+        val BUBBLE_EXCLUDED = stringSetPreferencesKey("bubble_excluded")
+        val BUBBLE_OPACITY = intPreferencesKey("bubble_opacity")
+        val BUBBLE_SIZE = intPreferencesKey("bubble_size")
+        val BUBBLE_X = intPreferencesKey("bubble_x")
+        val BUBBLE_Y = intPreferencesKey("bubble_y")
+        val OVERLAY_PROMPT = booleanPreferencesKey("overlay_prompt_shown")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -98,7 +120,15 @@ class SettingsRepository(private val context: Context) {
             onboardingDone = prefs[Keys.ONBOARDING] ?: false,
             defaultsSeeded = prefs[Keys.DEFAULTS_SEEDED] ?: false,
             batteryDialogShown = prefs[Keys.BATTERY_DIALOG] ?: false,
-            quickTileAdded = prefs[Keys.QUICK_TILE_ADDED] ?: false
+            quickTileAdded = prefs[Keys.QUICK_TILE_ADDED] ?: false,
+            persistentNotification = prefs[Keys.PERSISTENT_NOTIFICATION] ?: false,
+            bubbleEnabled = prefs[Keys.BUBBLE_ENABLED] ?: false,
+            bubbleExcluded = prefs[Keys.BUBBLE_EXCLUDED] ?: emptySet(),
+            bubbleOpacity = (prefs[Keys.BUBBLE_OPACITY] ?: 90).coerceIn(20, 100),
+            bubbleSize = (prefs[Keys.BUBBLE_SIZE] ?: 56).coerceIn(36, 96),
+            bubbleX = prefs[Keys.BUBBLE_X] ?: 0,
+            bubbleY = prefs[Keys.BUBBLE_Y] ?: 300,
+            overlayPromptShown = prefs[Keys.OVERLAY_PROMPT] ?: false
         )
     }
 
@@ -122,6 +152,35 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setDefaultsSeeded(done: Boolean) =
         context.dataStore.edit { it[Keys.DEFAULTS_SEEDED] = done }.let { }
+
+    suspend fun setPersistentNotification(enabled: Boolean) =
+        context.dataStore.edit { it[Keys.PERSISTENT_NOTIFICATION] = enabled }.let { }
+
+    suspend fun setBubbleEnabled(enabled: Boolean) =
+        context.dataStore.edit { it[Keys.BUBBLE_ENABLED] = enabled }.let { }
+
+    suspend fun setBubbleExcluded(packages: Set<String>) =
+        context.dataStore.edit { it[Keys.BUBBLE_EXCLUDED] = packages }.let { }
+
+    suspend fun setBubbleOpacity(percent: Int) =
+        context.dataStore.edit { it[Keys.BUBBLE_OPACITY] = percent.coerceIn(20, 100) }.let { }
+
+    suspend fun setBubbleSize(dp: Int) =
+        context.dataStore.edit { it[Keys.BUBBLE_SIZE] = dp.coerceIn(36, 96) }.let { }
+
+    /**
+     * Guarda onde o usuário largou a bolha. Sem isto ela voltava para o canto
+     * superior a cada vez que o serviço a recriava — ao sair e voltar do app,
+     * ao trocar de aplicativo ou ao reiniciar o aparelho.
+     */
+    suspend fun setBubblePosition(x: Int, y: Int) =
+        context.dataStore.edit {
+            it[Keys.BUBBLE_X] = x
+            it[Keys.BUBBLE_Y] = y
+        }.let { }
+
+    suspend fun setOverlayPromptShown(shown: Boolean) =
+        context.dataStore.edit { it[Keys.OVERLAY_PROMPT] = shown }.let { }
 
     suspend fun setQuickTileAdded(added: Boolean) =
         context.dataStore.edit { it[Keys.QUICK_TILE_ADDED] = added }.let { }

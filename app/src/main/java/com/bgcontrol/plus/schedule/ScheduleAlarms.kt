@@ -21,6 +21,12 @@ object ScheduleAlarms {
     const val ACTION_RUN = "com.bgcontrol.plus.RUN_SCHEDULE"
     const val EXTRA_GROUP_ID = "group_id"
 
+    /**
+     * Piso do intervalo. Abaixo disso o Android passa a adiar os alarmes por
+     * conta própria e o gasto de bateria deixa de compensar.
+     */
+    const val MIN_INTERVALO_S = 15
+
     fun reschedule(context: Context, group: ScheduleGroupEntity) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = pendingIntent(context, group.id)
@@ -68,6 +74,11 @@ object ScheduleAlarms {
         // Sem repetição, o horário é uma data só; se já passou, não há próxima.
         if (!group.repeatEnabled) {
             return group.runAtDate ?: from
+        }
+
+        // Repetição por intervalo: conta a partir de agora, ignorando o relógio.
+        group.intervalSeconds?.let { intervalo ->
+            return from + intervalo.coerceAtLeast(MIN_INTERVALO_S) * 1000L
         }
 
         val dias = group.selectedDays

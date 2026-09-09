@@ -42,6 +42,9 @@ class BlockedAppWatcherService : Service() {
     /** Pacote bloqueado -> instante da última tentativa de encerramento. */
     private val ultimaAcao = mutableMapOf<String, Long>()
 
+    /** Quando a suspensão de todos os bloqueados foi reaplicada pela última vez. */
+    private var ultimoReforco = 0L
+
     override fun onCreate() {
         super.onCreate()
         app = application as BgControlApp
@@ -91,6 +94,16 @@ class BlockedAppWatcherService : Service() {
         val now = System.currentTimeMillis()
         var algumEmPrimeiroPlano = false
 
+        // O bloqueio é uma suspensão, e o sistema a desfaz sozinho em algumas
+        // situações — atualização pela loja, troca de usuário, certas ROMs.
+        // Reaplicar de tempos em tempos é o que faz o bloqueio durar sem o
+        // usuário precisar reabrir o aplicativo.
+        val ativos = blocked.map { it.packageName }
+        if (now - ultimoReforco > REFORCO_MS) {
+            ultimoReforco = now
+            monitor.reforcarBloqueios(ativos.filterNot { it == foreground })
+        }
+
         for (entry in blocked) {
             val pkg = entry.packageName
 
@@ -109,9 +122,10 @@ class BlockedAppWatcherService : Service() {
             val reclaimed = monitor.memoryOf(pkg)
             val stopped = monitor.stopApp(pkg)
             if (!stopped) {
-                // Resistiu ao encerramento: reforça a restrição de segundo plano
-                // e tenta de novo na próxima passagem, em vez de fingir sucesso.
-                monitor.setBackgroundRestricted(pkg, true)
+                // Resistiu ao encerramento: reaplica o bloqueio inteiro em vez
+                // de só restringir o segundo plano. Apps como o Play Services
+                // voltam justamente porque o force-stop sozinho não os segura.
+                monitor.aplicarBloqueio(pkg)
             }
             app.container.repository.registerBlockedAction(pkg, stopped, reclaimed)
             ultimaAcao[pkg] = if (stopped) now else now - REPETICAO_MS + 3_000L
@@ -177,6 +191,9 @@ class BlockedAppWatcherService : Service() {
 
         /** Evita repetir o force-stop no mesmo app em sequência. */
         private const val REPETICAO_MS = 15_000L
+
+        /** Intervalo entre reaplicações da suspensão dos bloqueados. */
+        private const val REFORCO_MS = 60_000L
 
         fun start(context: Context) {
             val intent = Intent(context, BlockedAppWatcherService::class.java)

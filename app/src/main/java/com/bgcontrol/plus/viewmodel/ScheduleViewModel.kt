@@ -64,6 +64,7 @@ class ScheduleViewModel(
         daysOfWeek: Int,
         repeatEnabled: Boolean,
         runAtDate: Long?,
+        intervalSeconds: Int?,
         apps: List<InstalledApp> = emptyList()
     ) {
         viewModelScope.launch {
@@ -75,7 +76,8 @@ class ScheduleViewModel(
                 second = second.coerceIn(0, 59),
                 daysOfWeek = daysOfWeek,
                 repeatEnabled = repeatEnabled,
-                runAtDate = runAtDate
+                runAtDate = runAtDate,
+                intervalSeconds = intervalSeconds
             )
             val id = repository.createGroup(grupo)
             if (apps.isNotEmpty()) repository.addApps(id, apps)
@@ -94,6 +96,7 @@ class ScheduleViewModel(
         daysOfWeek: Int,
         repeatEnabled: Boolean,
         runAtDate: Long?,
+        intervalSeconds: Int?,
         apps: List<InstalledApp>?
     ) {
         viewModelScope.launch {
@@ -106,6 +109,7 @@ class ScheduleViewModel(
                 daysOfWeek = daysOfWeek,
                 repeatEnabled = repeatEnabled,
                 runAtDate = runAtDate,
+                intervalSeconds = intervalSeconds,
                 isEnabled = true
             )
             repository.updateGroup(atualizado)

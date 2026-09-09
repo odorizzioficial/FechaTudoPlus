@@ -24,7 +24,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DatePicker
@@ -57,7 +56,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bgcontrol.plus.R
 import com.bgcontrol.plus.data.entities.ScheduleMode
+import com.bgcontrol.plus.schedule.ScheduleAlarms
 import com.bgcontrol.plus.model.InstalledApp
+import com.bgcontrol.plus.ui.components.ActionPill
 import com.bgcontrol.plus.ui.components.AppIconWithBadge
 import com.bgcontrol.plus.ui.theme.glassContainerColor
 import com.bgcontrol.plus.viewmodel.AppPickerViewModel
@@ -86,7 +87,15 @@ fun CreateGroupStep(
     // busca vazia e nenhuma seleção herdada do grupo anterior.
     LaunchedEffect(Unit) {
         viewModel.reset(initialSelection)
-        viewModel.load(excludeRestricted = false, excludeBlocked = false)
+        // Ao alterar um grupo, os apps que ele já tem precisam aparecer aqui
+        // marcados. Sem isto, os que não estavam na lista curta (apps do
+        // sistema, por exemplo) sumiam ao salvar e o grupo ficava sem eles —
+        // era assim que a contagem de aplicativos zerava depois de uma edição.
+        viewModel.load(
+            excludeRestricted = false,
+            excludeBlocked = false,
+            alwaysVisible = initialSelection.toSet()
+        )
     }
 
     AlertDialog(
@@ -98,23 +107,16 @@ fun CreateGroupStep(
                     text = stringResource(R.string.create_group),
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = viewModel::toggleSystemApps) {
-                    Icon(
-                        imageVector = Icons.Rounded.Android,
-                        contentDescription = stringResource(
-                            if (state.includeSystem) {
-                                R.string.hide_system_apps
-                            } else {
-                                R.string.show_system_apps
-                            }
-                        ),
-                        tint = if (state.includeSystem) {
-                            MaterialTheme.colorScheme.tertiaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
+                ActionPill(
+                    text = stringResource(R.string.system_apps_button),
+                    icon = Icons.Rounded.Android,
+                    color = if (state.includeSystem) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    onClick = viewModel::toggleSystemApps
+                )
             }
         },
         text = {
@@ -180,7 +182,8 @@ fun CreateGroupStep(
         confirmButton = {
             TextButton(
                 onClick = { onNext(viewModel.selectedApps()) },
-                enabled = state.selected.isNotEmpty()
+                // Nome é obrigatório: sem ele o grupo vira "FORCE_STOP" na lista.
+                enabled = state.selected.isNotEmpty() && name.isNotBlank()
             ) {
                 Text(confirmLabel)
             }
@@ -288,6 +291,7 @@ fun ScheduleTimeStep(
     initialDays: Int = 0,
     initialRepeat: Boolean = true,
     initialDate: Long? = null,
+    initialInterval: Int? = null,
     confirmLabel: String = stringResource(R.string.save_time),
     onDismiss: () -> Unit,
     onSave: (
@@ -296,7 +300,8 @@ fun ScheduleTimeStep(
         second: Int,
         daysOfWeek: Int,
         repeat: Boolean,
-        runAtDate: Long?
+        runAtDate: Long?,
+        intervalSeconds: Int?
     ) -> Unit
 ) {
     val agora = remember { Calendar.getInstance() }
@@ -310,6 +315,20 @@ fun ScheduleTimeStep(
     var repetir by remember { mutableStateOf(initialRepeat) }
     var dataEscolhida by remember { mutableStateOf(initialDate) }
     var seletorData by remember { mutableStateOf(false) }
+
+    // Duas formas de agendar: em um horário do dia, ou a cada X tempo.
+    var porIntervalo by remember { mutableStateOf(initialInterval != null) }
+    var quantidade by remember { mutableStateOf(((initialInterval ?: 60) / 60).coerceAtLeast(1)) }
+    var unidade by remember {
+        mutableStateOf(
+            when {
+                initialInterval == null -> 1
+                initialInterval % 3600 == 0 -> 2
+                initialInterval % 60 == 0 -> 1
+                else -> 0
+            }
+        )
+    }
 
     // Iniciais dos dias vêm do sistema, então já saem no idioma do aparelho.
     val iniciais = remember {
@@ -326,6 +345,71 @@ fun ScheduleTimeStep(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ModoChip(
+                        label = stringResource(R.string.mode_time_button),
+                        selecionado = !porIntervalo,
+                        cor = accent,
+                        onClick = { porIntervalo = false },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ModoChip(
+                        label = stringResource(R.string.mode_repeat_button),
+                        selecionado = porIntervalo,
+                        cor = accent,
+                        onClick = { porIntervalo = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (porIntervalo) {
+                    Text(
+                        text = stringResource(R.string.interval_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = quantidade.toString(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = accent
+                        )
+                        Slider(
+                            value = quantidade.toFloat(),
+                            onValueChange = { quantidade = it.toInt().coerceAtLeast(1) },
+                            valueRange = 1f..60f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = accent,
+                                activeTrackColor = accent
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            R.string.unit_seconds,
+                            R.string.unit_minutes,
+                            R.string.unit_hours
+                        ).forEachIndexed { indice, rotulo ->
+                            ModoChip(
+                                label = stringResource(rotulo),
+                                selecionado = unidade == indice,
+                                cor = accent,
+                                onClick = { unidade = indice },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    Text(
+                        text = stringResource(R.string.interval_min_warning),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+
                 Text(
                     text = stringResource(R.string.schedule_time),
                     style = MaterialTheme.typography.labelMedium,
@@ -459,12 +543,23 @@ fun ScheduleTimeStep(
                         }
                     }
                 }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val data = if (repetir) {
+                    val intervalo = if (porIntervalo) {
+                        val fator = when (unidade) {
+                            0 -> 1
+                            2 -> 3600
+                            else -> 60
+                        }
+                        (quantidade * fator).coerceAtLeast(ScheduleAlarms.MIN_INTERVALO_S)
+                    } else {
+                        null
+                    }
+                    val data = if (repetir || porIntervalo) {
                         null
                     } else {
                         // A data escolhida recebe a hora do relógio.
@@ -480,12 +575,13 @@ fun ScheduleTimeStep(
                         timeState.hour,
                         timeState.minute,
                         segundos.toInt(),
-                        if (repetir) dias else 0,
-                        repetir,
-                        data
+                        if (repetir && !porIntervalo) dias else 0,
+                        repetir || porIntervalo,
+                        data,
+                        intervalo
                     )
                 },
-                enabled = repetir || dataEscolhida != null
+                enabled = porIntervalo || repetir || dataEscolhida != null
             ) {
                 Text(confirmLabel)
             }
@@ -519,5 +615,38 @@ fun ScheduleTimeStep(
         ) {
             DatePicker(state = dateState)
         }
+    }
+}
+
+/** Chip de escolha, usado no seletor de modo e nas unidades de tempo. */
+@Composable
+private fun ModoChip(
+    label: String,
+    selecionado: Boolean,
+    cor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(MaterialTheme.shapes.small)
+            .background(
+                if (selecionado) {
+                    cor.copy(alpha = 0.22f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selecionado) cor else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

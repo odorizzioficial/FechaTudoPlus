@@ -25,7 +25,8 @@ data class RunningUiState(
     val isClosingAll: Boolean = false,
     val lastBlocked: String? = null,
     val lastRestricted: String? = null,
-    val lastStopFailed: String? = null
+    val lastStopFailed: String? = null,
+    val showSystemApps: Boolean = false
 )
 
 class RunningViewModel(
@@ -61,6 +62,13 @@ class RunningViewModel(
         }
     }
 
+    /** Liga ou desliga a exibição dos aplicativos de fábrica não atualizados. */
+    fun setShowSystemApps(show: Boolean) {
+        _uiState.value = _uiState.value.copy(showSystemApps = show)
+        monitor.invalidateAppsCache()
+        refresh()
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -70,12 +78,19 @@ class RunningViewModel(
 
     private suspend fun loadSnapshot() {
         shizukuManager.refresh()
-        val snapshot = monitor.snapshot()
+        val snapshot = monitor.snapshot(includeSystem = _uiState.value.showSystemApps)
         // Aplicativos da aba Restritos não aparecem aqui: eles são protegidos
         // e nunca serão encerrados por esta tela.
         val restricted = repository.restrictedPackages()
+        // Os bloqueados também saem da lista. Um app bloqueado que continuava
+        // aparecendo aqui dava a impressão de que o bloqueio não pegou — e,
+        // pior, convidava o usuário a encerrá-lo à mão, o que liberava a
+        // suspensão e realmente desfazia o bloqueio.
+        val blocked = repository.blockedPackages()
         _uiState.value = _uiState.value.copy(
-            apps = snapshot.apps.filterNot { it.packageName in restricted },
+            apps = snapshot.apps.filterNot {
+                it.packageName in restricted || it.packageName in blocked
+            },
             source = snapshot.source,
             isLoading = false
         )
@@ -124,12 +139,12 @@ class RunningViewModel(
             repository.addBlocked(
                 InstalledApp(packageName = app.packageName, appName = app.appName)
             )
-            monitor.setBackgroundRestricted(app.packageName, true)
+            monitor.pacotesBloqueados = monitor.pacotesBloqueados + app.packageName
+            monitor.aplicarBloqueio(app.packageName)
             _uiState.value = _uiState.value.copy(
                 apps = _uiState.value.apps.filterNot { it.packageName == app.packageName },
                 lastBlocked = app.appName
             )
-            monitor.stopApp(app.packageName)
             loadSnapshot()
         }
     }

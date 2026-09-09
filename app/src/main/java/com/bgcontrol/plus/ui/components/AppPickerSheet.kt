@@ -19,15 +19,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +48,12 @@ import com.bgcontrol.plus.viewmodel.AppPickerViewModel
 /**
  * Folha de seleção de aplicativos: lista os apps instalados pelo usuário,
  * com busca e seleção múltipla. Apps já presentes na lista aparecem desabilitados.
+ *
+ * Com [manageMode] a folha deixa de ser só "adicionar" e passa a editar uma
+ * lista existente: os itens já escolhidos chegam marcados em [preSelected],
+ * desmarcar realmente remove e o botão continua ativo com nenhum marcado, para
+ * que dê para esvaziar a lista. Sem isso, desmarcar não fazia nada — o botão
+ * devolvia apenas o que estava marcado e a tela somava ao conjunto antigo.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,15 +62,52 @@ fun AppPickerSheet(
     excludeRestricted: Boolean,
     excludeBlocked: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (List<InstalledApp>) -> Unit
+    onConfirm: (List<InstalledApp>) -> Unit,
+    preSelected: Set<String> = emptySet(),
+    manageMode: Boolean = false,
+    onConfirmPackages: ((Set<String>) -> Unit)? = null
 ) {
     val viewModel: AppPickerViewModel = viewModel(factory = AppPickerViewModel.Factory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var avisoSistema by remember { mutableStateOf(false) }
+
+    if (avisoSistema) {
+        AlertDialog(
+            onDismissRequest = { avisoSistema = false },
+            containerColor = glassContainerColor(),
+            title = { Text(stringResource(R.string.system_apps_warning_title)) },
+            text = { Text(stringResource(R.string.system_apps_warning)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.toggleSystemApps()
+                        avisoSistema = false
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.understood),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { avisoSistema = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
-        viewModel.reset()
-        viewModel.load(excludeRestricted, excludeBlocked)
+        viewModel.reset(preSelected.toList())
+        // Um app já escolhido pode ser do sistema, e a lista curta não o traria.
+        // Sem isto ele nem apareceria para ser desmarcado.
+        viewModel.load(
+            excludeRestricted = excludeRestricted,
+            excludeBlocked = excludeBlocked,
+            alwaysVisible = if (manageMode) preSelected else emptySet()
+        )
     }
 
     ModalBottomSheet(
@@ -80,30 +127,47 @@ fun AppPickerSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                // Apps do sistema só aparecem quando o usuário pede.
-                IconButton(onClick = viewModel::toggleSystemApps) {
-                    Icon(
-                        imageVector = Icons.Rounded.Android,
-                        contentDescription = stringResource(
-                            if (state.includeSystem) {
-                                R.string.hide_system_apps
-                            } else {
-                                R.string.show_system_apps
-                            }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    // Quantos ainda podem ser escolhidos: cai a cada seleção.
+                    Text(
+                        text = stringResource(
+                            R.string.available_apps,
+                            (state.visibleApps.count { it.packageName !in state.alreadyUsed } -
+                                state.selected.size).coerceAtLeast(0)
                         ),
-                        tint = if (state.includeSystem) {
-                            MaterialTheme.colorScheme.tertiaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                // Apps do sistema só aparecem quando o usuário pede.
+                ActionPill(
+                    text = stringResource(R.string.system_apps_button),
+                    icon = Icons.Rounded.Android,
+                    color = if (state.includeSystem) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    contentDescription = stringResource(
+                        if (state.includeSystem) {
+                            R.string.hide_system_apps
+                        } else {
+                            R.string.show_system_apps
+                        }
+                    ),
+                    onClick = {
+                        if (state.includeSystem) {
+                            viewModel.toggleSystemApps()
+                        } else {
+                            avisoSistema = true
+                        }
+                    }
+                )
             }
 
             OutlinedTextField(
@@ -144,18 +208,23 @@ fun AppPickerSheet(
 
             Button(
                 onClick = {
-                    onConfirm(viewModel.selectedApps())
+                    if (manageMode) {
+                        onConfirmPackages?.invoke(viewModel.selectedPackages())
+                    } else {
+                        onConfirm(viewModel.selectedApps())
+                    }
                     viewModel.clear()
                 },
-                enabled = state.selected.isNotEmpty(),
+                // Ao gerenciar, salvar com a lista vazia é uma escolha válida.
+                enabled = manageMode || state.selected.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.small
             ) {
                 Text(
-                    text = if (state.selected.isEmpty()) {
-                        stringResource(R.string.select_apps)
-                    } else {
-                        stringResource(R.string.add_selected, state.selected.size)
+                    text = when {
+                        manageMode -> stringResource(R.string.save_selection, state.selected.size)
+                        state.selected.isEmpty() -> stringResource(R.string.select_apps)
+                        else -> stringResource(R.string.add_selected, state.selected.size)
                     }
                 )
             }

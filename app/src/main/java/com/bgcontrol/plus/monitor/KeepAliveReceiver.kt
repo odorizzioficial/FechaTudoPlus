@@ -5,37 +5,41 @@ import android.content.Context
 import android.content.Intent
 import com.bgcontrol.plus.BgControlApp
 import com.bgcontrol.plus.quick.QuickAccessService
-import com.bgcontrol.plus.schedule.ScheduleAlarms
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-/** Reativa o vigia após reiniciar o aparelho, se o usuário tiver deixado ligado. */
-class BootReceiver : BroadcastReceiver() {
+/**
+ * Receptor do alarme periódico do KeepAliveService.
+ *
+ * Quando o alarme dispara, este receptor verifica se os serviços essenciais
+ * ainda estão rodando e os reinicia se necessário. Depois reagenda o próximo
+ * alarme para que o ciclo continue indefinidamente.
+ */
+class KeepAliveReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val app = context.applicationContext as BgControlApp
         val pending = goAsync()
+
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             try {
-                // O KeepAlive é o primeiro a subir: ele reagenda o alarme
-                // periódico e ancora o processo antes de qualquer outra coisa.
+                // Sempre reinicia o KeepAlive — é ele que garante que este
+                // próprio alarme continuará sendo reagendado.
                 KeepAliveService.start(context)
 
                 val settings = app.container.settingsRepository.settings.first()
-                val hasBlocked = app.container.repository.enabledBlockedApps().isNotEmpty()
-                if (settings.blockerServiceEnabled && hasBlocked) {
+
+                // Religa os serviços que dependem de preferências do usuário.
+                if (settings.blockerServiceEnabled &&
+                    app.container.repository.enabledBlockedApps().isNotEmpty()
+                ) {
                     BlockedAppWatcherService.start(context)
                 }
                 if (settings.persistentNotification || settings.bubbleEnabled) {
                     QuickAccessService.sincronizar(context, true)
-                }
-                // Reiniciar o aparelho apaga os alarmes: é preciso registrá-los de novo.
-                app.container.scheduleRepository.allGroups().forEach {
-                    ScheduleAlarms.reschedule(context, it)
                 }
             } finally {
                 pending.finish()

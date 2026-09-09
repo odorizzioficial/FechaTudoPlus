@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Adb
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -89,6 +91,18 @@ fun OnboardingDialog(
                     label = stringResource(R.string.battery_optimization),
                     done = state.batteryOptimized,
                     onClick = viewModel::requestBatteryExemption
+                )
+                StepRow(
+                    icon = Icons.Rounded.Notifications,
+                    label = stringResource(R.string.grant_notifications),
+                    done = state.notificationsAllowed,
+                    onClick = viewModel::openNotificationSettings
+                )
+                StepRow(
+                    icon = Icons.Rounded.Layers,
+                    label = stringResource(R.string.grant_overlay),
+                    done = state.overlayAllowed,
+                    onClick = viewModel::requestOverlayPermission
                 )
                 StepRow(
                     icon = Icons.Rounded.Adb,

@@ -8,10 +8,12 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.net.Uri
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bgcontrol.plus.R
 import com.bgcontrol.plus.preferences.AppLanguage
+import com.bgcontrol.plus.quick.QuickAccessService
 import com.bgcontrol.plus.preferences.AppSettings
 import com.bgcontrol.plus.preferences.SettingsRepository
 import com.bgcontrol.plus.preferences.ThemeMode
@@ -24,6 +26,7 @@ import java.util.function.Consumer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
@@ -31,7 +34,10 @@ data class SettingsUiState(
     val shizukuState: ShizukuState = ShizukuState.NOT_INSTALLED,
     val batteryOptimized: Boolean = false,
     val hasUsageAccess: Boolean = false,
-    val versionName: String = "1.0.0"
+    val versionName: String = "1.0.0",
+    val overlayAllowed: Boolean = false,
+    /** False quando o Android está descartando as notificações do aplicativo. */
+    val notificationsAllowed: Boolean = true
 )
 
 class SettingsViewModel(
@@ -64,7 +70,10 @@ class SettingsViewModel(
         _uiState.value = _uiState.value.copy(
             batteryOptimized = PackageUtils.isIgnoringBatteryOptimizations(context),
             hasUsageAccess = PackageUtils.hasUsageStatsPermission(context),
-            versionName = PackageUtils.appVersionName(context)
+            versionName = PackageUtils.appVersionName(context),
+            overlayAllowed = Settings.canDrawOverlays(context),
+            notificationsAllowed = NotificationManagerCompat.from(context)
+                .areNotificationsEnabled()
         )
     }
 
@@ -161,6 +170,82 @@ class SettingsViewModel(
 
     fun setLanguage(language: AppLanguage) {
         viewModelScope.launch { settingsRepository.setLanguage(language) }
+    }
+
+    fun setPersistentNotification(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setPersistentNotification(enabled)
+            sincronizarAcoesRapidas()
+        }
+    }
+
+    fun setBubbleEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setBubbleEnabled(enabled)
+            sincronizarAcoesRapidas()
+        }
+    }
+
+    fun setBubbleExcluded(packages: Set<String>) {
+        viewModelScope.launch { settingsRepository.setBubbleExcluded(packages) }
+    }
+
+    /** O serviço sobe se algum dos dois estiver ligado, e cai quando ambos saem. */
+    private suspend fun sincronizarAcoesRapidas() {
+        val prefs = settingsRepository.settings.first()
+        QuickAccessService.sincronizar(
+            getApplication(),
+            prefs.persistentNotification || prefs.bubbleEnabled
+        )
+    }
+
+    fun setBubbleOpacity(percent: Int) {
+        viewModelScope.launch { settingsRepository.setBubbleOpacity(percent) }
+    }
+
+    fun setBubbleSize(dp: Int) {
+        viewModelScope.launch { settingsRepository.setBubbleSize(dp) }
+    }
+
+    fun setOverlayPromptShown() {
+        viewModelScope.launch { settingsRepository.setOverlayPromptShown(true) }
+    }
+
+    /**
+     * Abre a tela de notificações do próprio aplicativo.
+     *
+     * Vale para os dois casos que impedem a notificação fixa de aparecer: a
+     * permissão negada no Android 13+ e o canal desligado à mão. O diálogo de
+     * permissão só pode ser mostrado uma vez pelo sistema; daí em diante este é
+     * o único caminho.
+     */
+    fun openNotificationSettings() {
+        val context = getApplication<Application>()
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }.onFailure {
+            runCatching {
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.parse("package:${context.packageName}"))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+        }
+    }
+
+    /** Abre a tela oficial do Android para permitir a sobreposição. */
+    fun requestOverlayPermission() {
+        val context = getApplication<Application>()
+        runCatching {
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:${context.packageName}")
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
     }
 
     fun setGlassIntensity(percent: Int) {

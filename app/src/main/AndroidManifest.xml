@@ -18,6 +18,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Bolha flutuante: o usuário concede na tela oficial do Android -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- Shizuku -->
@@ -48,9 +50,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BgControlPlus">
 
+        <!-- singleTop: o toque longo na bolha traz esta mesma tela de volta em
+             vez de empilhar outra cópia, e o pedido chega em onNewIntent. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.BgControlPlus">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -65,6 +70,26 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Monitora quando aplicativos bloqueados saem do primeiro plano para encerrá-los" />
+        </service>
+
+        <!-- Serviço de persistência: mantém o processo vivo mesmo fechado -->
+        <service
+            android:name=".monitor.KeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Mantém o processo do aplicativo ativo em segundo plano para que bloqueios e agendamentos funcionem sem abrir o app" />
+        </service>
+
+        <!-- Notificação fixa e bolha flutuante -->
+        <service
+            android:name=".quick.QuickAccessService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Mantém a notificação de ação rápida e a bolha flutuante do usuário" />
         </service>
 
         <!-- Bloco das Configurações Rápidas (Android 7+) -->
@@ -83,6 +108,15 @@
         </service>
 
         <!-- Dispara os grupos de limpeza agendada -->
+        <!-- Receptor que relança os serviços quando o alarme periódico dispara -->
+        <receiver
+            android:name=".monitor.KeepAliveReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.bgcontrol.plus.KEEP_ALIVE" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".schedule.ScheduleReceiver"
             android:exported="false">
@@ -96,6 +130,10 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Huawei/Xiaomi/OnePlus usam este evento no lugar do padrão -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <!-- Relança os serviços após atualizar o próprio aplicativo -->
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
 

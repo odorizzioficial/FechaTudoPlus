@@ -6,8 +6,8 @@ plugins {
 }
 
 // Versão em um lugar só: usada no app e no nome do arquivo gerado.
-val versaoApp = "1.2.0"
-val versaoCodigo = 3
+val versaoApp = "1.3.0"
+val versaoCodigo = 4
 
 android {
     namespace = "com.bgcontrol.plus"
@@ -31,8 +31,29 @@ android {
         )
     }
 
+    /**
+     * Assinatura lida de variáveis de ambiente. Assim a chave nunca fica no
+     * código nem no repositório: no GitHub Actions ela vem dos secrets, e na
+     * sua máquina o Android Studio continua usando o diálogo de sempre.
+     */
+    signingConfigs {
+        create("release") {
+            val caminhoChave = System.getenv("KEYSTORE_FILE")
+            if (caminhoChave != null) {
+                storeFile = file(caminhoChave)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            val assinaturaRelease = signingConfigs.getByName("release")
+            if (assinaturaRelease.storeFile != null) {
+                signingConfig = assinaturaRelease
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

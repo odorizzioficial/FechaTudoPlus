@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.bgcontrol.plus.BgControlApp
 import com.bgcontrol.plus.model.InstalledApp
+import com.bgcontrol.plus.util.PackageUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,9 +43,17 @@ class AppPickerViewModel(application: Application) : AndroidViewModel(applicatio
     private var excluirRestritos = false
     private var excluirBloqueados = false
 
-    fun load(excludeRestricted: Boolean, excludeBlocked: Boolean) {
+    /** Pacotes que precisam aparecer na lista mesmo fora do filtro atual. */
+    private var garantirVisiveis: Set<String> = emptySet()
+
+    fun load(
+        excludeRestricted: Boolean,
+        excludeBlocked: Boolean,
+        alwaysVisible: Set<String> = emptySet()
+    ) {
         excluirRestritos = excludeRestricted
         excluirBloqueados = excludeBlocked
+        garantirVisiveis = alwaysVisible
         recarregar(_uiState.value.includeSystem)
     }
 
@@ -64,11 +73,37 @@ class AppPickerViewModel(application: Application) : AndroidViewModel(applicatio
                 if (excluirBloqueados) addAll(container.repository.blockedPackages())
             }
             _uiState.value = _uiState.value.copy(
-                allApps = apps,
+                allApps = comExtras(apps),
                 alreadyUsed = used,
                 isLoading = false
             )
         }
+    }
+
+    /**
+     * Acrescenta à lista os pacotes que precisam estar visíveis mas ficaram de
+     * fora do filtro — tipicamente apps do sistema já escolhidos, com o botão
+     * "apps do sistema" desligado.
+     *
+     * Sem isto, ao editar uma lista existente esses itens não apareciam, e o
+     * que não aparece não pode ser desmarcado: o usuário desmarcava o que via,
+     * salvava, e o item invisível continuava lá.
+     */
+    private fun comExtras(apps: List<InstalledApp>): List<InstalledApp> {
+        if (garantirVisiveis.isEmpty()) return apps
+        val contexto = getApplication<Application>()
+        val conhecidos = apps.mapTo(mutableSetOf()) { it.packageName }
+        val faltando = garantirVisiveis.filterNot { it in conhecidos }
+        if (faltando.isEmpty()) return apps
+
+        val extras = faltando.map { pacote ->
+            InstalledApp(
+                packageName = pacote,
+                appName = PackageUtils.getAppLabel(contexto, pacote) ?: pacote,
+                isSystem = PackageUtils.isSystemPackage(contexto, pacote)
+            )
+        }
+        return (apps + extras).sortedBy { it.appName.lowercase() }
     }
 
     fun onQueryChange(query: String) {
@@ -82,8 +117,29 @@ class AppPickerViewModel(application: Application) : AndroidViewModel(applicatio
         )
     }
 
-    fun selectedApps(): List<InstalledApp> =
-        _uiState.value.allApps.filter { it.packageName in _uiState.value.selected }
+    /**
+     * Aplicativos marcados no momento.
+     *
+     * O filtro por [AppPickerUiState.allApps] sozinho perdia seleções: a lista
+     * carregada é só a dos apps do usuário, então qualquer pacote de sistema já
+     * pertencente ao grupo sumia na hora de salvar — e o grupo voltava com
+     * menos aplicativos do que tinha, ou com nenhum. Os que não estão na lista
+     * visível são remontados pelo PackageManager em vez de descartados.
+     */
+    fun selectedApps(): List<InstalledApp> {
+        val estado = _uiState.value
+        val porPacote = estado.allApps.associateBy { it.packageName }
+        val contexto = getApplication<Application>()
+        return estado.selected.map { pacote ->
+            porPacote[pacote] ?: InstalledApp(
+                packageName = pacote,
+                appName = PackageUtils.getAppLabel(contexto, pacote) ?: pacote
+            )
+        }
+    }
+
+    /** Só os nomes de pacote marcados, para listas que guardam apenas isso. */
+    fun selectedPackages(): Set<String> = _uiState.value.selected
 
     fun clear() {
         _uiState.value = _uiState.value.copy(selected = emptySet(), query = "")

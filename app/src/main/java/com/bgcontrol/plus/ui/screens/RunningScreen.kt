@@ -17,17 +17,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +64,7 @@ import com.bgcontrol.plus.ui.components.MetricBar
 import com.bgcontrol.plus.ui.components.ScreenHeader
 import com.bgcontrol.plus.ui.components.bottomBarContentPadding
 import com.bgcontrol.plus.ui.theme.Glass
+import com.bgcontrol.plus.ui.theme.glassContainerColor
 import com.bgcontrol.plus.ui.theme.glassSurface
 import com.bgcontrol.plus.util.Formatters
 import com.bgcontrol.plus.viewmodel.AppViewModelFactories
@@ -75,6 +79,8 @@ fun RunningScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    var avisoSistema by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.onScreenVisible() }
 
@@ -106,6 +112,33 @@ fun RunningScreen(
         viewModel.consumeLastRestricted()
     }
 
+    if (avisoSistema) {
+        AlertDialog(
+            onDismissRequest = { avisoSistema = false },
+            containerColor = glassContainerColor(),
+            title = { Text(stringResource(R.string.system_apps_warning_title)) },
+            text = { Text(stringResource(R.string.system_apps_warning)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.setShowSystemApps(true)
+                        avisoSistema = false
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.understood),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { avisoSistema = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -128,13 +161,34 @@ fun RunningScreen(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(bottom = 8.dp)
                     )
-                    ActionPill(
-                        text = stringResource(R.string.apps_label),
-                        icon = Icons.Rounded.Refresh,
-                        color = AppTab.RUNNING.accent(),
-                        contentDescription = stringResource(R.string.refresh),
-                        onClick = viewModel::refresh
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        // Apps de fábrica não atualizados só entram se o usuário
+                        // pedir, e depois de ler o aviso.
+                        ActionPill(
+                            text = stringResource(R.string.system_apps_button),
+                            icon = Icons.Rounded.Android,
+                            color = if (state.showSystemApps) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            onClick = {
+                                if (state.showSystemApps) {
+                                    viewModel.setShowSystemApps(false)
+                                } else {
+                                    avisoSistema = true
+                                }
+                            }
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        ActionPill(
+                            text = stringResource(R.string.apps_label),
+                            icon = Icons.Rounded.Refresh,
+                            color = AppTab.RUNNING.accent(),
+                            contentDescription = stringResource(R.string.refresh),
+                            onClick = viewModel::refresh
+                        )
+                    }
                 }
             }
 

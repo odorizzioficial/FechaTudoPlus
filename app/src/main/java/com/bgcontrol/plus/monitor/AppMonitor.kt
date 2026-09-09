@@ -36,11 +36,15 @@ class AppMonitor(
     private val shizuku: ShizukuManager
 ) {
 
-    suspend fun snapshot(): RunningSnapshot = withContext(Dispatchers.IO) {
-        // Inclui apps do sistema que têm tela própria: eles também consomem
-        // memória e podem ser encerrados. Os essenciais já estão em Restritos,
-        // e a aba Em execução filtra a lista de protegidos.
-        val userApps = installedAppsCache()
+    /**
+     * Lista o que está em execução.
+     *
+     * Com [includeSystem] entram também os aplicativos de fábrica nunca
+     * atualizados, que o usuário só vê depois de ligar o botão e ler o aviso.
+     */
+    suspend fun snapshot(includeSystem: Boolean = false): RunningSnapshot =
+        withContext(Dispatchers.IO) {
+        val userApps = installedAppsCache(includeSystem)
         val foreground = currentForegroundPackage()
 
         if (shizuku.isReady) {
@@ -81,9 +85,22 @@ class AppMonitor(
         RunningSnapshot(emptyList(), MonitorSource.UNAVAILABLE)
     }
 
+    /**
+     * Pacotes da aba Bloqueados que devem continuar suspensos.
+     *
+     * O encerramento normal suspende e libera o pacote na sequência, só para
+     * limpar os recentes. Para um app bloqueado essa liberação desfazia o
+     * bloqueio poucos milissegundos depois de aplicá-lo — era por isso que o
+     * Play Services e outros teimosos voltavam para a lista. Este conjunto é
+     * mantido em dia por [BgControlApp] e faz todo comando pular o unsuspend.
+     */
+    @Volatile
+    var pacotesBloqueados: Set<String> = emptySet()
+
     @Volatile
     private var appsEmCache: Map<String, InstalledApp>? = null
     private var appsEmCacheEm = 0L
+    private var cacheComSistema = false
 
     private data class ProcessEntry(val pid: Int, val rssBytes: Long)
 
@@ -255,10 +272,18 @@ class AppMonitor(
         }
     }
 
-    /** Segunda garantia de que nenhum pacote ficou suspenso. */
+    /**
+     * Segunda garantia de que nenhum pacote ficou suspenso por acidente.
+     *
+     * Os bloqueados são a exceção: para eles a suspensão é o bloqueio, e
+     * liberá-los aqui era exatamente o que fazia o app voltar sozinho.
+     */
     private suspend fun garantirLiberados(packages: List<String>) {
-        if (packages.isEmpty() || Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
-        shizuku.exec(packages.joinToString("; ") { "pm unsuspend --user 0 $it" })
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
+        val bloqueados = pacotesBloqueados
+        val alvos = packages.filterNot { it in bloqueados }
+        if (alvos.isEmpty()) return
+        shizuku.exec(alvos.joinToString("; ") { "pm unsuspend --user 0 $it" })
     }
 
     /**
@@ -276,13 +301,80 @@ class AppMonitor(
      */
     private fun comandoEncerrar(packageName: String): String {
         val encerrar = "am force-stop $packageName"
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            "$encerrar; " +
-                "pm suspend --user 0 $packageName; " +
-                "pm unsuspend --user 0 $packageName"
-        } else {
-            encerrar
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return encerrar
+        // Bloqueado: suspende e deixa suspenso. É isso que impede o sistema de
+        // religar o aplicativo assim que o force-stop termina.
+        if (packageName in pacotesBloqueados) {
+            return "$encerrar; pm suspend --user 0 $packageName"
         }
+        return "$encerrar; " +
+            "pm suspend --user 0 $packageName; " +
+            "pm unsuspend --user 0 $packageName"
+    }
+
+    /**
+     * Bloqueio de verdade, em quatro camadas.
+     *
+     * O force-stop sozinho nunca segurou apps como o Google Play Services: o
+     * sistema os religa em segundos por causa de alarmes, jobs e broadcasts
+     * pendentes. As camadas abaixo tiram cada um desses caminhos de volta:
+     *
+     *  1. suspende o pacote — o Android não deixa nada dele iniciar;
+     *  2. corta as permissões de rodar em segundo plano (appops);
+     *  3. joga o app no balde "restricted", sem jobs nem alarmes livres;
+     *  4. encerra o que ainda estiver de pé.
+     *
+     * Tudo é reversível e volta ao normal em [removerBloqueio], que roda ao
+     * desbloquear. Sem Shizuku nada disso está disponível: o Android não
+     * concede esse poder a um app comum, e a função apenas retorna false.
+     */
+    suspend fun aplicarBloqueio(packageName: String): Boolean = withContext(Dispatchers.IO) {
+        if (!shizuku.isReady || !VALID_PACKAGE.matches(packageName)) return@withContext false
+
+        val comandos = buildList {
+            add("cmd appops set $packageName RUN_IN_BACKGROUND ignore")
+            add("cmd appops set $packageName RUN_ANY_IN_BACKGROUND ignore")
+            add("am set-standby-bucket $packageName restricted")
+            add("am force-stop $packageName")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                add("pm suspend --user 0 $packageName")
+            }
+        }
+        shizuku.exec(comandos.joinToString("; "))
+        true
+    }
+
+    /** Desfaz [aplicarBloqueio] por inteiro — o app volta ao estado do sistema. */
+    suspend fun removerBloqueio(packageName: String) = withContext(Dispatchers.IO) {
+        if (!shizuku.isReady || !VALID_PACKAGE.matches(packageName)) return@withContext
+
+        val comandos = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                add("pm unsuspend --user 0 $packageName")
+            }
+            add("cmd appops set $packageName RUN_IN_BACKGROUND allow")
+            add("cmd appops set $packageName RUN_ANY_IN_BACKGROUND allow")
+            add("am set-standby-bucket $packageName active")
+        }
+        shizuku.exec(comandos.joinToString("; "))
+    }
+
+    /**
+     * Reaplica o bloqueio de todos os pacotes de uma vez.
+     *
+     * Atualizações pela Play Store, troca de usuário e algumas ROMs desfazem a
+     * suspensão por conta própria, e não existe comando confiável em todas as
+     * versões para perguntar "este pacote ainda está suspenso?". Reaplicar é
+     * idempotente e custa uma única ida ao shell, então o vigia simplesmente
+     * repete o comando de tempos em tempos.
+     */
+    suspend fun reforcarBloqueios(packages: Collection<String>) = withContext(Dispatchers.IO) {
+        if (!shizuku.isReady || Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return@withContext
+        }
+        val alvos = packages.filter { VALID_PACKAGE.matches(it) }
+        if (alvos.isEmpty()) return@withContext
+        shizuku.exec(alvos.joinToString("; ") { "pm suspend --user 0 $it" })
     }
 
     /**
@@ -304,15 +396,18 @@ class AppMonitor(
     }
 
     /**
-     * Lista do seletor. Sem o botão do Android, só os aplicativos instalados
-     * pelo usuário. Com o botão, entra tudo que está instalado no aparelho.
+     * Lista do seletor.
+     *
+     * Sem o botão ligado, só os aplicativos instalados pelo usuário — é o que
+     * ele espera ver ao tocar em "Adicionar". Com o botão, entra tudo que está
+     * instalado, inclusive componentes de fábrica sem tela própria.
      */
     fun allApps(includeSystem: Boolean): List<InstalledApp> =
-        if (includeSystem) {
-            PackageUtils.getApps(context, includeSystem = true)
-        } else {
-            PackageUtils.getKillableApps(context)
-        }
+        PackageUtils.getApps(
+            context,
+            includeSystem = includeSystem,
+            requireLauncher = !includeSystem
+        )
 
     /**
      * Mapa de aplicativos instalados, guardado por um minuto.
@@ -321,18 +416,23 @@ class AppMonitor(
      * que custa caro; sem o cache isso rodaria a cada 2,5 segundos com a aba
      * aberta. Aplicativos instalados ou removidos aparecem no ciclo seguinte.
      */
-    private fun installedAppsCache(): Map<String, InstalledApp> {
+    private fun installedAppsCache(includeSystem: Boolean): Map<String, InstalledApp> {
         val agora = System.currentTimeMillis()
         val atual = appsEmCache
-        if (atual != null && agora - appsEmCacheEm < CACHE_APPS_MS) return atual
+        if (atual != null && agora - appsEmCacheEm < CACHE_APPS_MS && cacheComSistema == includeSystem) {
+            return atual
+        }
 
         // Apps do usuário mais os de fábrica que foram atualizados pela loja:
         // todos encerráveis de verdade. Ver PackageUtils.isKillableApp.
-        val novo = PackageUtils
-            .getKillableApps(context)
-            .associateBy { it.packageName }
+        val novo = if (includeSystem) {
+            PackageUtils.getApps(context, includeSystem = true, requireLauncher = false)
+        } else {
+            PackageUtils.getKillableApps(context)
+        }.associateBy { it.packageName }
         appsEmCache = novo
         appsEmCacheEm = agora
+        cacheComSistema = includeSystem
         return novo
     }
 

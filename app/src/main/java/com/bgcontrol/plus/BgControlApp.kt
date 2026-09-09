@@ -2,12 +2,15 @@ package com.bgcontrol.plus
 
 import android.app.Application
 import com.bgcontrol.plus.monitor.BlockedAppWatcherService
+import com.bgcontrol.plus.monitor.KeepAliveService
+import com.bgcontrol.plus.quick.QuickAccessService
 import com.bgcontrol.plus.schedule.ScheduleAlarms
 import com.bgcontrol.plus.util.DefaultProtectedApps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class BgControlApp : Application() {
@@ -25,6 +28,23 @@ class BgControlApp : Application() {
         container = AppContainer(this)
         container.shizukuManager.register()
 
+        // Inicia o serviço de persistência imediatamente, antes de qualquer
+        // outra coisa. Ele é a âncora que mantém o processo vivo mesmo quando
+        // o usuário fecha o aplicativo ou o sistema tenta libertar memória.
+        KeepAliveService.start(this)
+
+        // Quem encerra aplicativos precisa saber quais estão bloqueados, senão
+        // o passo que limpa a tela de recentes libera o pacote logo depois de
+        // bloqueá-lo. Este é o único ponto que mantém essa lista em dia, e ele
+        // vale para o botão da tela, a bolha, o bloco rápido e o agendamento.
+        scope.launch {
+            container.repository.blockedApps
+                .map { lista ->
+                    lista.filter { it.isEnabled }.map { it.packageName }.toSet()
+                }
+                .collect { container.appMonitor.pacotesBloqueados = it }
+        }
+
         scope.launch {
             val settings = container.settingsRepository.settings.first()
             // Primeira execução: protege os aplicativos padrão do aparelho para
@@ -39,6 +59,11 @@ class BgControlApp : Application() {
             // cobre o caso de o processo ter sido morto entre uma execução e outra.
             container.scheduleRepository.allGroups().forEach {
                 ScheduleAlarms.reschedule(this@BgControlApp, it)
+            }
+
+            // Notificação fixa e bolha voltam a subir após reiniciar o processo.
+            if (settings.persistentNotification || settings.bubbleEnabled) {
+                QuickAccessService.sincronizar(this@BgControlApp, true)
             }
 
             if (settings.blockerServiceEnabled &&
