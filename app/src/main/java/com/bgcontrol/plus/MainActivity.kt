@@ -58,6 +58,7 @@ import com.bgcontrol.plus.ui.components.BottomNavBar
 import com.bgcontrol.plus.ui.components.BottomNavContent
 import com.bgcontrol.plus.ui.components.LanguageSelector
 import com.bgcontrol.plus.ui.screens.BlockedScreen
+import com.bgcontrol.plus.ui.screens.FrozenScreen
 import com.bgcontrol.plus.ui.screens.OnboardingDialog
 import com.bgcontrol.plus.ui.screens.RestrictedScreen
 import com.bgcontrol.plus.ui.screens.RunningScreen
@@ -285,6 +286,7 @@ private fun AppContent(
                     )
                     AppTab.RESTRICTED -> RestrictedScreen(onMessage = showMessage)
                     AppTab.BLOCKED -> BlockedScreen(onMessage = showMessage)
+                    AppTab.FROZEN -> FrozenScreen(onMessage = showMessage)
                     AppTab.SCHEDULE -> ScheduleScreen()
                     AppTab.SETTINGS -> SettingsScreen()
                 }

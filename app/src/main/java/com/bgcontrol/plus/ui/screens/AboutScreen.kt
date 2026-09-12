@@ -14,7 +14,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.Adb
+import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.BubbleChart
+import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Gavel
@@ -105,6 +111,57 @@ fun AboutScreen(
             }
         }
 
+        // Seções de como cada modo funciona
+        item {
+            AboutSection(
+                icon = Icons.Rounded.PowerSettingsNew,
+                tint = MaterialTheme.colorScheme.error,
+                title = stringResource(R.string.about_mode_running_title),
+                body = stringResource(R.string.about_mode_running)
+            )
+        }
+        item {
+            AboutSection(
+                icon = Icons.Rounded.Shield,
+                tint = MaterialTheme.colorScheme.primary,
+                title = stringResource(R.string.about_mode_restricted_title),
+                body = stringResource(R.string.about_mode_restricted)
+            )
+        }
+        item {
+            AboutSection(
+                icon = Icons.Rounded.Block,
+                tint = MaterialTheme.colorScheme.tertiary,
+                title = stringResource(R.string.about_mode_blocked_title),
+                body = stringResource(R.string.about_mode_blocked)
+            )
+        }
+        item {
+            AboutSection(
+                icon = Icons.Rounded.AcUnit,
+                tint = MaterialTheme.colorScheme.secondary,
+                title = stringResource(R.string.about_mode_frozen_title),
+                body = stringResource(R.string.about_mode_frozen)
+            )
+        }
+        item {
+            AboutSection(
+                icon = Icons.Rounded.Schedule,
+                tint = MaterialTheme.colorScheme.primary,
+                title = stringResource(R.string.about_mode_schedule_title),
+                body = stringResource(R.string.about_mode_schedule)
+            )
+        }
+        item {
+            AboutSection(
+                icon = Icons.Rounded.BubbleChart,
+                tint = MaterialTheme.colorScheme.secondary,
+                title = stringResource(R.string.about_mode_bubble_title),
+                body = stringResource(R.string.about_mode_bubble)
+            )
+        }
+
+        // Seção Shizuku
         item {
             AboutSection(
                 icon = Icons.Rounded.Adb,

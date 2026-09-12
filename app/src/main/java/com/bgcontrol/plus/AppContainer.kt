@@ -12,6 +12,7 @@ import com.bgcontrol.plus.shizuku.ShizukuManager
 class AppContainer(context: Context) {
 
     private val database = AppDatabase.get(context)
+    val db get() = database
 
     val repository = AppListRepository(
         restrictedDao = database.restrictedAppDao(),

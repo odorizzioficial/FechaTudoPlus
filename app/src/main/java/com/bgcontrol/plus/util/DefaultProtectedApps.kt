@@ -35,6 +35,7 @@ object DefaultProtectedApps {
             ?.let { pacotes.add(it) }
 
         pacotes.addAll(familiaShizuku(context))
+        pacotes.addAll(wallets(context))
 
         return pacotes
             .filter { it.isNotBlank() && it != "android" && it != context.packageName }
@@ -98,6 +99,39 @@ object DefaultProtectedApps {
             ?.packageName
     } catch (t: Throwable) {
         null
+    }
+
+    /**
+     * Wallets de fabricantes e de bancos comuns: Samsung Wallet, Google Wallet,
+     * Garmin Pay, Huawei Pay e similares. Bloquear esses apps pode impedir
+     * pagamentos por NFC mesmo com o celular na tela de bloqueio.
+     */
+    private val WALLET_PACKAGES = setOf(
+        "com.samsung.android.spay",         // Samsung Wallet
+        "com.google.android.apps.walletnfcrel", // Google Wallet
+        "com.garmin.android.apps.connectmobile", // Garmin Pay
+        "com.huawei.wallet",                // Huawei Wallet
+        "com.xiaomi.payment",               // Xiaomi Pay
+        "com.bbpos.wiseasy",                // Wise Pay
+        "com.squareup.cash",                // Cash App
+        "com.paypal.android.p2pmobile",     // PayPal
+        "br.com.bradesco.next",             // Next
+        "com.nu.production",                // Nubank
+        "br.com.intermedium",               // PicPay
+        "com.mercadopago.wallet",           // Mercado Pago
+        "br.com.stone.production",          // Stone
+    )
+
+    private fun wallets(context: Context): List<String> {
+        val pm = context.packageManager
+        return WALLET_PACKAGES.filter { pkg ->
+            try {
+                pm.getApplicationInfo(pkg, 0)
+                true
+            } catch (t: Throwable) {
+                false
+            }
+        }
     }
 
     private fun rotulo(pm: PackageManager, pkg: String): String? = try {

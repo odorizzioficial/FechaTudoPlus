@@ -6,8 +6,8 @@ plugins {
 }
 
 // Versão em um lugar só: usada no app e no nome do arquivo gerado.
-val versaoApp = "1.3.0"
-val versaoCodigo = 4
+val versaoApp = "1.4.8"
+val versaoCodigo = 13
 
 android {
     namespace = "com.bgcontrol.plus"

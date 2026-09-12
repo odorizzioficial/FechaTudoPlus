@@ -39,8 +39,9 @@ class AppMonitor(
     /**
      * Lista o que está em execução.
      *
-     * Com [includeSystem] entram também os aplicativos de fábrica nunca
-     * atualizados, que o usuário só vê depois de ligar o botão e ler o aviso.
+     * Com [includeSystem] = false já aparecem apps de sistema que têm processos
+     * relevantes (com UID de app, não de sistema raiz). Com [includeSystem] = true
+     * aparecem todos, incluindo serviços do núcleo do Android.
      */
     suspend fun snapshot(includeSystem: Boolean = false): RunningSnapshot =
         withContext(Dispatchers.IO) {
@@ -202,6 +203,12 @@ class AppMonitor(
      * é escalonada: encerra, confere na tabela de processos e, se ele voltou,
      * mata os processos em segundo plano e encerra de novo.
      */
+    /** Exposto para ViewModels que precisam verificar o estado do Shizuku. */
+    fun shizukuReady(): Boolean = shizuku.isReady
+
+    /** Executa um comando privilegiado arbitrário via Shizuku. */
+    suspend fun execPrivileged(cmd: String) = shizuku.exec(cmd)
+
     suspend fun stopApp(packageName: String): Boolean = withContext(Dispatchers.IO) {
         if (!VALID_PACKAGE.matches(packageName)) return@withContext false
 
@@ -299,17 +306,51 @@ class AppMonitor(
      * no mesmo comando e e repetido em seguida, para que nenhum app fique
      * suspenso por acidente.
      */
+    /**
+     * Monta o comando que realmente encerra um app e limpa o cartão dele dos
+     * recentes.
+     *
+     * Sempre manda o usuário para a tela inicial antes do force-stop. Sem
+     * isso, encerrar um app que está aberto na tela naquele instante (por
+     * exemplo, ao tocar a bolha mágica com a Play Store em primeiro plano)
+     * não limpava os recentes: suspender/liberar um app que ainda está em
+     * foco não finaliza a task da mesma forma que suspender um app em
+     * segundo plano. Tirar o foco primeiro faz o comportamento ser sempre
+     * o mesmo, esteja o app na tela ou não.
+     */
     private fun comandoEncerrar(packageName: String): String {
+        // Só manda para a tela inicial quando o próprio pacote-alvo é o que
+        // está em primeiro plano. Sem essa checagem, encerrar qualquer app a
+        // partir de dentro do Fecha Tudo Plus levava o próprio app para
+        // segundo plano — o usuário via a tela inicial e achava que o app
+        // tinha fechado sozinho, mesmo o alvo sendo outro pacote qualquer.
+        val alvoEmPrimeiroPlano = packageName == currentForegroundPackage()
+        val irParaHome = if (alvoEmPrimeiroPlano) {
+            "am start -a android.intent.action.MAIN -c android.intent.category.HOME; "
+        } else {
+            ""
+        }
         val encerrar = "am force-stop $packageName"
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return encerrar
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return "$irParaHome$encerrar"
+
+        // Remoção direcionada da task nos recentes, quando ela ainda resistir
+        // ao ciclo de suspender/liberar. Procura a entrada cujo campo de
+        // afinidade (`A=`) é o próprio pacote e remove só essa task — nunca a
+        // primeira da lista, que poderia ser de outro aplicativo.
+        val limparRecentes =
+            "am task remove \$(dumpsys activity recents 2>/dev/null | " +
+                "grep \"A=$packageName \" | grep -oE '#[0-9]+' | head -1 | tr -d '#') " +
+                "2>/dev/null || true"
+
         // Bloqueado: suspende e deixa suspenso. É isso que impede o sistema de
         // religar o aplicativo assim que o force-stop termina.
         if (packageName in pacotesBloqueados) {
-            return "$encerrar; pm suspend --user 0 $packageName"
+            return "$irParaHome$encerrar; pm suspend --user 0 $packageName; $limparRecentes"
         }
-        return "$encerrar; " +
+        return "$irParaHome$encerrar; " +
             "pm suspend --user 0 $packageName; " +
-            "pm unsuspend --user 0 $packageName"
+            "pm unsuspend --user 0 $packageName; " +
+            limparRecentes
     }
 
     /**

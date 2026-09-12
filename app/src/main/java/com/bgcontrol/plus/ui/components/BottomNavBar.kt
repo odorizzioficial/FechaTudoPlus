@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Schedule
@@ -49,6 +50,7 @@ enum class AppTab(val icon: ImageVector, val labelRes: Int) {
     RUNNING(Icons.Rounded.PowerSettingsNew, R.string.tab_running),
     RESTRICTED(Icons.Rounded.Shield, R.string.tab_restricted),
     BLOCKED(Icons.Rounded.Block, R.string.tab_blocked),
+    FROZEN(Icons.Rounded.AcUnit, R.string.tab_frozen),
     SCHEDULE(Icons.Rounded.Schedule, R.string.tab_schedule),
     SETTINGS(Icons.Rounded.Settings, R.string.tab_settings)
 }
@@ -63,6 +65,7 @@ fun AppTab.accent(): Color = if (LocalDarkTheme.current) {
         AppTab.RUNNING -> Palette.AccentRunning
         AppTab.RESTRICTED -> Palette.AccentRestricted
         AppTab.BLOCKED -> Palette.AccentBlocked
+        AppTab.FROZEN -> Palette.AccentFrozen
         AppTab.SCHEDULE -> Palette.AccentSchedule
         AppTab.SETTINGS -> Palette.AccentSettings
     }
@@ -71,6 +74,7 @@ fun AppTab.accent(): Color = if (LocalDarkTheme.current) {
         AppTab.RUNNING -> Palette.LightAccentRunning
         AppTab.RESTRICTED -> Palette.LightAccentRestricted
         AppTab.BLOCKED -> Palette.LightAccentBlocked
+        AppTab.FROZEN -> Palette.LightAccentFrozen
         AppTab.SCHEDULE -> Palette.LightAccentSchedule
         AppTab.SETTINGS -> Palette.LightAccentSettings
     }

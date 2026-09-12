@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /** O que fazer com os aplicativos do grupo quando a hora chegar. */
-enum class ScheduleMode { FORCE_STOP, BLOCK, RESTRICT }
+enum class ScheduleMode { FORCE_STOP, BLOCK, RESTRICT, FREEZE }
 
 /**
  * Grupo agendado: um horário e um modo, com os aplicativos escolhidos.

@@ -260,6 +260,7 @@ fun ChooseModeStep(
                                         ScheduleMode.FORCE_STOP -> R.string.mode_force_stop_desc
                                         ScheduleMode.BLOCK -> R.string.mode_block_desc
                                         ScheduleMode.RESTRICT -> R.string.mode_restrict_desc
+                                        ScheduleMode.FREEZE -> R.string.mode_freeze_desc
                                     }
                                 ),
                                 style = MaterialTheme.typography.bodyMedium,

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.Block
@@ -222,7 +223,8 @@ fun RunningScreen(
                     memoryLabel = Formatters.memory(context, app.memoryBytes),
                     onStop = { viewModel.stopSingle(app.packageName) },
                     onBlock = { viewModel.blockApp(app) },
-                    onRestrict = { viewModel.restrictApp(app) }
+                    onRestrict = { viewModel.restrictApp(app) },
+                    onFreeze = { viewModel.freezeApp(app) }
                 )
             }
         }
@@ -250,7 +252,8 @@ private fun RunningAppCard(
     memoryLabel: String,
     onStop: () -> Unit,
     onBlock: () -> Unit,
-    onRestrict: () -> Unit
+    onRestrict: () -> Unit,
+    onFreeze: () -> Unit
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val alto = app.memoryBytes != null && app.memoryBytes > 700L * 1024 * 1024
@@ -330,6 +333,20 @@ private fun RunningAppCard(
                             onClick = {
                                 menuOpen = false
                                 onRestrict()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.freeze_app)) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.AcUnit,
+                                    contentDescription = null,
+                                    tint = AppTab.FROZEN.accent()
+                                )
+                            },
+                            onClick = {
+                                menuOpen = false
+                                onFreeze()
                             }
                         )
                     }

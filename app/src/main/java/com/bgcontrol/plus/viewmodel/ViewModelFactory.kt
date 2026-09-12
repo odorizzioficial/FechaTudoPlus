@@ -58,6 +58,10 @@ object AppViewModelFactories {
         }
     }
 
+    val frozen: ViewModelProvider.Factory = viewModelFactory {
+        initializer { FrozenViewModel(application = app()) }
+    }
+
     val settings: ViewModelProvider.Factory = viewModelFactory {
         initializer {
             val app = app()

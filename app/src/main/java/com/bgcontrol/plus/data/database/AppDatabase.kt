@@ -7,9 +7,11 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.bgcontrol.plus.data.dao.BlockedAppDao
+import com.bgcontrol.plus.data.dao.FrozenAppDao
 import com.bgcontrol.plus.data.dao.RestrictedAppDao
 import com.bgcontrol.plus.data.dao.ScheduleDao
 import com.bgcontrol.plus.data.entities.BlockedAppEntity
+import com.bgcontrol.plus.data.entities.FrozenAppEntity
 import com.bgcontrol.plus.data.entities.RestrictedAppEntity
 import com.bgcontrol.plus.data.entities.ScheduleAppEntity
 import com.bgcontrol.plus.data.entities.ScheduleGroupEntity
@@ -23,9 +25,10 @@ import com.bgcontrol.plus.data.entities.ScheduleGroupEntity
         RestrictedAppEntity::class,
         BlockedAppEntity::class,
         ScheduleGroupEntity::class,
-        ScheduleAppEntity::class
+        ScheduleAppEntity::class,
+        FrozenAppEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun restrictedAppDao(): RestrictedAppDao
     abstract fun blockedAppDao(): BlockedAppDao
     abstract fun scheduleDao(): ScheduleDao
+    abstract fun frozenAppDao(): FrozenAppDao
 
     companion object {
         @Volatile
@@ -117,12 +121,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Versão 6: tabela de apps congelados. */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `frozen_apps` ("
+                    + "`packageName` TEXT NOT NULL PRIMARY KEY, "
+                    + "`appName` TEXT NOT NULL, "
+                    + "`frozenAt` INTEGER NOT NULL, "
+                    + "`isEnabled` INTEGER NOT NULL DEFAULT 1)"
+                )
+            }
+        }
+
         fun get(context: Context): AppDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
                 "bg_control_plus.db"
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build().also { instance = it }
         }
     }
 }

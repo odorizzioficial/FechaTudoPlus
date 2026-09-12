@@ -21,7 +21,10 @@ import androidx.compose.material.icons.rounded.BubbleChart
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Opacity
+import androidx.compose.material.icons.rounded.CenterFocusStrong
 import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +72,7 @@ fun NotificationsScreen(
     onExcludedChange: (Set<String>) -> Unit,
     onBubbleOpacityChange: (Int) -> Unit,
     onBubbleSizeChange: (Int) -> Unit,
+    onBubbleResetPosition: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var seletorApps by remember { mutableStateOf(false) }
@@ -200,14 +204,37 @@ fun NotificationsScreen(
             // Opacidade e tamanho ficam junto do interruptor, e o efeito
             // aparece na bolha no mesmo instante em que o dedo arrasta.
             item {
+                // Aviso sobre o toque longo de 2 segundos
+                GlassCard {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Info,
+                            contentDescription = null,
+                            tint = AppTab.SCHEDULE.accent(),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.bubble_longpress_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 10.dp)
+                        )
+                    }
+                }
+            }
+
+            item {
                 CartaoAjuste(
                     icone = Icons.Rounded.Opacity,
                     cor = AppTab.SCHEDULE.accent(),
                     titulo = stringResource(R.string.bubble_opacity),
                     valor = stringResource(R.string.percent_value, settings.bubbleOpacity),
                     posicao = settings.bubbleOpacity.toFloat(),
-                    faixa = 20f..100f,
-                    passos = 15,
+                    faixa = 0f..100f,
+                    passos = 20,
                     onChange = { onBubbleOpacityChange(it.toInt()) }
                 )
             }
@@ -223,6 +250,22 @@ fun NotificationsScreen(
                     passos = 11,
                     onChange = { onBubbleSizeChange(it.toInt()) }
                 )
+            }
+
+            item {
+                LinhaAcao(
+                    icon = Icons.Rounded.CenterFocusStrong,
+                    cor = AppTab.SCHEDULE.accent(),
+                    titulo = stringResource(R.string.bubble_reset_position),
+                    descricao = stringResource(R.string.bubble_reset_position_desc),
+                    onClick = onBubbleResetPosition
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Refresh,
+                        contentDescription = null,
+                        tint = AppTab.SCHEDULE.accent()
+                    )
+                }
             }
 
             item {

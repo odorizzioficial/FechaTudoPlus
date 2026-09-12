@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.bgcontrol.plus.BgControlApp
 import com.bgcontrol.plus.data.entities.ScheduleMode
+import com.bgcontrol.plus.data.entities.FrozenAppEntity
 import com.bgcontrol.plus.model.InstalledApp
 import kotlinx.coroutines.launch
 
@@ -49,6 +50,17 @@ class ScheduleReceiver : BroadcastReceiver() {
 
                     ScheduleMode.RESTRICT -> apps.forEach {
                         repository.addRestricted(InstalledApp(it.packageName, it.appName))
+                    }
+
+                    ScheduleMode.FREEZE -> apps.forEach {
+                        val cmd = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                            "pm disable-user --user 0 ${it.packageName}"
+                        } else {
+                            "pm disable ${it.packageName}"
+                        }
+                        monitor.execPrivileged(cmd)
+                        app.container.db.frozenAppDao()
+                            .insert(FrozenAppEntity(it.packageName, it.appName))
                     }
                 }
 

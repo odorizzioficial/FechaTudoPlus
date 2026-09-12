@@ -207,6 +207,17 @@ class SettingsViewModel(
         viewModelScope.launch { settingsRepository.setBubbleSize(dp) }
     }
 
+    /** Reposiciona a bolha no centro da tela na próxima vez que ela for criada. */
+    /**
+     * Centraliza a bolha imediatamente, mesmo com o serviço já rodando.
+     * Chama o serviço diretamente em vez de só gravar a preferência: a bolha
+     * já visível na tela não escuta o DataStore para reposicionar sozinha —
+     * só para opacidade e tamanho — então sem isso o botão parecia não fazer nada.
+     */
+    fun resetBubblePosition() {
+        com.bgcontrol.plus.quick.QuickAccessService.resetarPosicao(getApplication())
+    }
+
     fun setOverlayPromptShown() {
         viewModelScope.launch { settingsRepository.setOverlayPromptShown(true) }
     }

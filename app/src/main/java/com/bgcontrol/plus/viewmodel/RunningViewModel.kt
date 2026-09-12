@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bgcontrol.plus.data.repository.AppListRepository
+import com.bgcontrol.plus.data.entities.FrozenAppEntity
 import com.bgcontrol.plus.model.InstalledApp
 import com.bgcontrol.plus.model.MonitorSource
 import com.bgcontrol.plus.model.RunningAppInfo
@@ -100,6 +101,25 @@ class RunningViewModel(
      * Encerra tudo de uma vez. Os apps listados aqui já excluem os restritos,
      * e o launcher e o próprio aplicativo continuam fora por segurança.
      */
+    fun freezeApp(app: RunningAppInfo) {
+        viewModelScope.launch {
+            if (!monitor.shizukuReady()) return@launch
+            val cmd = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                "pm disable-user --user 0 ${app.packageName}"
+            } else {
+                "pm disable ${app.packageName}"
+            }
+            monitor.execPrivileged(cmd)
+            val dao = (getApplication<Application>() as com.bgcontrol.plus.BgControlApp)
+                .container.db.frozenAppDao()
+            dao.insert(FrozenAppEntity(packageName = app.packageName, appName = app.appName))
+            // remove da lista de execução imediatamente
+            _uiState.value = _uiState.value.copy(
+                apps = _uiState.value.apps.filterNot { it.packageName == app.packageName }
+            )
+        }
+    }
+
     fun closeAll() {
         viewModelScope.launch {
             val protectedPackages = repository.restrictedPackages()

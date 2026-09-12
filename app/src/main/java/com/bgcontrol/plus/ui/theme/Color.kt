@@ -86,12 +86,14 @@ object Palette {
     val AccentRunning = Color(0xFFD0BCFF)
     val AccentRestricted = Color(0xFF00DAF3)
     val AccentBlocked = Color(0xFFFFB4AB)
+    val AccentFrozen = Color(0xFF8ECDFF)
     val AccentSchedule = Color(0xFFFFD479)
     val AccentSettings = Color(0xFF9BEFFF)
 
     val LightAccentRunning = Color(0xFF6750A4)
     val LightAccentRestricted = Color(0xFF00616F)
     val LightAccentBlocked = Color(0xFFBA1A1A)
+    val LightAccentFrozen = Color(0xFF0061A4)
     val LightAccentSchedule = Color(0xFF8A5A00)
     val LightAccentSettings = Color(0xFF00687A)
 }

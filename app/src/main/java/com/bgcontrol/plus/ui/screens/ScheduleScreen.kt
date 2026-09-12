@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ExpandMore
@@ -75,6 +76,7 @@ private fun ScheduleMode.icone(): ImageVector = when (this) {
     ScheduleMode.FORCE_STOP -> Icons.Rounded.PowerSettingsNew
     ScheduleMode.BLOCK -> Icons.Rounded.Block
     ScheduleMode.RESTRICT -> Icons.Rounded.Shield
+    ScheduleMode.FREEZE -> Icons.Rounded.AcUnit
 }
 
 @Composable
@@ -82,6 +84,7 @@ private fun ScheduleMode.cor(): Color = when (this) {
     ScheduleMode.FORCE_STOP -> AppTab.RUNNING.accent()
     ScheduleMode.BLOCK -> AppTab.BLOCKED.accent()
     ScheduleMode.RESTRICT -> AppTab.RESTRICTED.accent()
+    ScheduleMode.FREEZE -> AppTab.FROZEN.accent()
 }
 
 @Composable
@@ -90,6 +93,7 @@ private fun ScheduleMode.rotulo(): String = stringResource(
         ScheduleMode.FORCE_STOP -> R.string.mode_force_stop
         ScheduleMode.BLOCK -> R.string.mode_block
         ScheduleMode.RESTRICT -> R.string.mode_restrict
+        ScheduleMode.FREEZE -> R.string.mode_freeze
     }
 )
 

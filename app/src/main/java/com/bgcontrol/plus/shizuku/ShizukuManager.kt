@@ -71,6 +71,9 @@ class ShizukuManager(private val context: Context) {
         .debuggable(false)
         .version(1)
 
+    /** Quantas tentativas de reconexão já fizemos nesta sessão. */
+    private var tentativasReconexao = 0
+
     private val connection = object : android.content.ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             binding = false
@@ -82,12 +85,27 @@ class ShizukuManager(private val context: Context) {
         override fun onServiceDisconnected(name: ComponentName?) {
             binding = false
             userService = null
+            // Reconecta automaticamente até 3 vezes antes de desistir.
+            // Isso resolve o caso em que o app volta do segundo plano e o
+            // Shizuku ainda está vivo mas o bind foi descartado.
+            if (tentativasReconexao < 3 && isReady) {
+                tentativasReconexao++
+                try {
+                    Shizuku.bindUserService(userServiceArgs, this)
+                } catch (t: Throwable) {
+                    Log.w(TAG, "Falha na reconexão automática (\$tentativasReconexao)", t)
+                }
+            }
+            userService = null
             pendingBind?.complete(null)
             pendingBind = null
         }
     }
 
-    private val binderReceivedListener = Shizuku.OnBinderReceivedListener { refresh() }
+    private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
+        tentativasReconexao = 0   // binder novo = conexão fresca, zera tentativas
+        refresh()
+    }
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
         userService = null
         refresh()

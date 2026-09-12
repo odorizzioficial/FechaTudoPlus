@@ -124,7 +124,7 @@ class SettingsRepository(private val context: Context) {
             persistentNotification = prefs[Keys.PERSISTENT_NOTIFICATION] ?: false,
             bubbleEnabled = prefs[Keys.BUBBLE_ENABLED] ?: false,
             bubbleExcluded = prefs[Keys.BUBBLE_EXCLUDED] ?: emptySet(),
-            bubbleOpacity = (prefs[Keys.BUBBLE_OPACITY] ?: 90).coerceIn(20, 100),
+            bubbleOpacity = (prefs[Keys.BUBBLE_OPACITY] ?: 90).coerceIn(0, 100),
             bubbleSize = (prefs[Keys.BUBBLE_SIZE] ?: 56).coerceIn(36, 96),
             bubbleX = prefs[Keys.BUBBLE_X] ?: 0,
             bubbleY = prefs[Keys.BUBBLE_Y] ?: 300,
@@ -163,7 +163,7 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[Keys.BUBBLE_EXCLUDED] = packages }.let { }
 
     suspend fun setBubbleOpacity(percent: Int) =
-        context.dataStore.edit { it[Keys.BUBBLE_OPACITY] = percent.coerceIn(20, 100) }.let { }
+        context.dataStore.edit { it[Keys.BUBBLE_OPACITY] = percent.coerceIn(0, 100) }.let { }
 
     suspend fun setBubbleSize(dp: Int) =
         context.dataStore.edit { it[Keys.BUBBLE_SIZE] = dp.coerceIn(36, 96) }.let { }

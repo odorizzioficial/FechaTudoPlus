@@ -69,10 +69,43 @@ object PackageUtils {
      * Android religa em seguida, dando a impressão de que nada funcionou) e os
      * marcados como persistentes, que não podem ser encerrados.
      */
+    /**
+     * Determina se um app aparece na lista de Em execução (sem toggle de sistema).
+     *
+     * Regras (sem toggle ativo):
+     *  - FLAG_PERSISTENT = nunca pode ser encerrado → fora
+     *  - Apps do usuário → dentro
+     *  - Apps de sistema com launcher (YouTube, Chrome, Samsung Pay…) → dentro
+     *  - Apps de sistema sem launcher: só entram se forem seguros de fechar —
+     *    identificados por terem uma "categoria" real atribuída pela loja
+     *    (ApplicationInfo.category), o que na prática só existe em apps de
+     *    consumo (Google Play Services, Play Store, apps de fabricante), nunca
+     *    em componentes internos do Android (SystemUI, drivers, HALs). Sem essa
+     *    checagem, ligar a lista sem o toggle mostrava dezenas de serviços do
+     *    núcleo do sistema que o usuário nunca reconheceria nem deveria mexer.
+     *  - Um pequeno complemento cobre pacotes muito comuns que às vezes não têm
+     *    categoria definida mas são universalmente seguros de encerrar/bloquear.
+     */
+    private val PACOTES_SISTEMA_SEGUROS = setOf(
+        "com.google.android.gms",              // Google Play Services
+        "com.google.android.gsf",              // Google Services Framework
+        "com.android.vending"                  // Google Play Store
+    )
+
     private fun isKillableApp(pm: PackageManager, info: ApplicationInfo): Boolean {
         if (info.flags and ApplicationInfo.FLAG_PERSISTENT != 0) return false
         if (isUserApp(info)) return true
-        return pm.getLaunchIntentForPackage(info.packageName) != null
+        if (pm.getLaunchIntentForPackage(info.packageName) != null) return true
+        if (info.uid < 10_000) return false
+        if (info.packageName in PACOTES_SISTEMA_SEGUROS) return true
+        // category != CATEGORY_UNDEFINED é o sinal mais confiável de que a
+        // Play Store classificou este pacote como um app de consumo real, e
+        // não um componente interno do sistema.
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            info.category != ApplicationInfo.CATEGORY_UNDEFINED
+        } else {
+            false
+        }
     }
 
     /** Lista usada pela aba Em execução e pelo seletor de aplicativos. */

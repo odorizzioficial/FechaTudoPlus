@@ -117,6 +117,7 @@ fun SettingsScreen(
             onExcludedChange = viewModel::setBubbleExcluded,
             onBubbleOpacityChange = viewModel::setBubbleOpacity,
             onBubbleSizeChange = viewModel::setBubbleSize,
+            onBubbleResetPosition = viewModel::resetBubblePosition,
             modifier = modifier
         )
         return

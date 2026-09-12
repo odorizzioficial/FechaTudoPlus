@@ -83,10 +83,35 @@ class QuickAccessService : Service() {
         // O sistema pode recriar o serviço sem passar por onCreate com a
         // notificação ativa; repetir aqui é barato e evita ANR de FGS.
         iniciarEmPrimeiroPlano()
-        if (intent?.action == ACTION_FECHAR_TUDO) {
-            fecharTudo()
+        when (intent?.action) {
+            ACTION_FECHAR_TUDO -> fecharTudo()
+            ACTION_RESET_POSICAO -> resetarPosicaoDaBolha()
+            ACTION_NOTIFICACAO_DESCARTADA -> reapresentarSeAindaAtiva()
         }
         return START_STICKY
+    }
+
+    /**
+     * Move a bolha já existente na tela de volta ao centro, e grava essa
+     * posição. Sem chamar [windowManager]?.updateViewLayout diretamente aqui,
+     * o botão de reset só mudava o valor salvo — a bolha continuava fora de
+     * alcance até o serviço ser recriado, o que na prática nunca acontecia
+     * enquanto o app ficava aberto.
+     */
+    private fun resetarPosicaoDaBolha() {
+        val view = bolha
+        val layout = params
+        val lado = dpParaPx(prefsAtuais.bubbleSize)
+        val dm = resources.displayMetrics
+        val centroX = (dm.widthPixels - lado) / 2
+        val centroY = (dm.heightPixels - lado) / 2
+
+        if (view != null && layout != null) {
+            layout.x = centroX
+            layout.y = centroY
+            runCatching { windowManager?.updateViewLayout(view, layout) }
+        }
+        guardarPosicao(centroX, centroY)
     }
 
     /**
@@ -104,6 +129,21 @@ class QuickAccessService : Service() {
         val tipo = if (Build.VERSION.SDK_INT >= 34) 0x40000000 else 0
         runCatching {
             ServiceCompat.startForeground(this, NOTIFICACAO_ID, montarNotificacao(), tipo)
+        }
+    }
+
+    /**
+     * Esconde ou exibe a notificação conforme a preferência do usuário.
+     * O serviço precisa estar em primeiro plano para a bolha funcionar, mas
+     * isso não obriga a notificação a ser visível — cancelar com IMPORTANCE_MIN
+     * faz ela sumir da barra enquanto o serviço continua vivo.
+     */
+    private fun sincronizarVisibilidadeNotificacao(prefs: AppSettings) {
+        val nm = getSystemService(android.app.NotificationManager::class.java)
+        if (!prefs.persistentNotification) {
+            nm.cancel(NOTIFICACAO_ID)
+        } else {
+            nm.notify(NOTIFICACAO_ID, montarNotificacao())
         }
     }
 
@@ -126,7 +166,10 @@ class QuickAccessService : Service() {
                     return@collect
                 }
 
-                withContext(Dispatchers.Main) { aplicarEstadoDaBolha() }
+                withContext(Dispatchers.Main) {
+                    sincronizarVisibilidadeNotificacao(prefs)
+                    aplicarEstadoDaBolha()
+                }
             }
         }
     }
@@ -145,7 +188,10 @@ class QuickAccessService : Service() {
                     val oculto = atual != null && atual in prefs.bubbleExcluded
                     if (oculto != emAppOculto) {
                         emAppOculto = oculto
-                        withContext(Dispatchers.Main) { aplicarEstadoDaBolha() }
+                        withContext(Dispatchers.Main) {
+                    sincronizarVisibilidadeNotificacao(prefs)
+                    aplicarEstadoDaBolha()
+                }
                     }
                 }
                 delay(if (prefs.bubbleEnabled) INTERVALO_MS else INTERVALO_PARADO_MS)
@@ -190,8 +236,18 @@ class QuickAccessService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = prefsAtuais.bubbleX
-            y = prefsAtuais.bubbleY
+            // Posição 0,0 = primeira abertura; coloca no centro da tela.
+            val dm = resources.displayMetrics
+            x = if (prefsAtuais.bubbleX == 0 && prefsAtuais.bubbleY == 300) {
+                (dm.widthPixels - lado) / 2
+            } else {
+                prefsAtuais.bubbleX.coerceIn(0, dm.widthPixels - lado)
+            }
+            y = if (prefsAtuais.bubbleX == 0 && prefsAtuais.bubbleY == 300) {
+                (dm.heightPixels - lado) / 2
+            } else {
+                prefsAtuais.bubbleY.coerceIn(0, dm.heightPixels - lado)
+            }
         }
 
         view.alpha = prefsAtuais.bubbleOpacity / 100f
@@ -303,6 +359,19 @@ class QuickAccessService : Service() {
         runCatching { startActivity(intent) }
     }
 
+    /**
+     * Recoloca a notificação assim que o usuário a arrasta para o lado —
+     * mas só se a preferência continuar ligada. Sem essa checagem, desligar
+     * a notificação fixa bem no instante em que ela foi arrastada a traria
+     * de volta por engano.
+     */
+    private fun reapresentarSeAindaAtiva() {
+        if (prefsAtuais.persistentNotification) {
+            getSystemService(NotificationManager::class.java)
+                .notify(NOTIFICACAO_ID, montarNotificacao())
+        }
+    }
+
     private fun dpParaPx(dp: Int): Int =
         (dp * resources.displayMetrics.density).roundToInt()
 
@@ -361,13 +430,28 @@ class QuickAccessService : Service() {
             Intent(this, QuickAccessService::class.java).setAction(ACTION_FECHAR_TUDO),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+        // Dispara apenas quando o usuário arrasta a notificação para o lado —
+        // nunca quando o próprio app a cancela (por exemplo, ao desligar a
+        // opção). É o único jeito de saber que foi um descarte manual.
+        val descartada = PendingIntent.getService(
+            this,
+            2,
+            Intent(this, QuickAccessService::class.java).setAction(ACTION_NOTIFICACAO_DESCARTADA),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
         return NotificationCompat.Builder(this, CANAL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.quick_actions_running))
             .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            // setOngoing ainda ajuda em versões mais antigas do Android, mas a
+            // partir do Android 14 o próprio sistema permite arrastar para o
+            // lado notificações de serviço em primeiro plano mesmo assim —
+            // não tem como bloquear esse gesto. O setDeleteIntent abaixo é o
+            // que garante que ela reapareça na hora.
             .setOngoing(true)
+            .setDeleteIntent(descartada)
             // Sem isto o Android pode segurar a notificação por até dez
             // segundos, e o usuário conclui que ela não apareceu.
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -390,6 +474,21 @@ class QuickAccessService : Service() {
         private const val CANAL_ID = "quick_access"
         private const val NOTIFICACAO_ID = 2001
         private const val ACTION_FECHAR_TUDO = "com.bgcontrol.plus.QUICK_CLOSE_ALL"
+        private const val ACTION_RESET_POSICAO = "com.bgcontrol.plus.RESET_BUBBLE_POSITION"
+        private const val ACTION_NOTIFICACAO_DESCARTADA = "com.bgcontrol.plus.NOTIFICATION_DISMISSED"
+
+        /** Pede ao serviço (se estiver rodando) para recentralizar a bolha agora. */
+        fun resetarPosicao(context: Context) {
+            val intent = Intent(context, QuickAccessService::class.java)
+                .setAction(ACTION_RESET_POSICAO)
+            runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            }
+        }
 
         /** Ritmo da checagem do app em primeiro plano, para esconder a bolha. */
         private const val INTERVALO_MS = 1_500L
@@ -399,7 +498,7 @@ class QuickAccessService : Service() {
         private const val TOLERANCIA_TOQUE = 12f
 
         /** Tempo de dedo parado que abre as configurações da bolha. */
-        private const val TOQUE_LONGO_MS = 3_000L
+        private const val TOQUE_LONGO_MS = 2_000L
 
         fun sincronizar(context: Context, ativo: Boolean) {
             val intent = Intent(context, QuickAccessService::class.java)
