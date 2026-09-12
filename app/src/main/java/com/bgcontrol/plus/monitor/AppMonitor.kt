@@ -342,11 +342,19 @@ class AppMonitor(
                 "grep \"A=$packageName \" | grep -oE '#[0-9]+' | head -1 | tr -d '#') " +
                 "2>/dev/null || true"
 
-        // Bloqueado: suspende e deixa suspenso. É isso que impede o sistema de
-        // religar o aplicativo assim que o force-stop termina.
+        // Bloqueado: sem pm suspend. Suspender faz o Android recusar até
+        // abertura manual (é a mensagem "gerenciado pelo app Shell" que
+        // aparece ao tocar o ícone) — isso trava o app por completo, não só
+        // em segundo plano, que nunca foi a intenção do bloqueio. O force-stop
+        // mais as camadas de appops/standby bucket de aplicarBloqueio já
+        // seguram o app fora do segundo plano; o vigia (BlockedAppWatcher)
+        // cuida de reencerrar se ele tentar voltar sozinho.
         if (packageName in pacotesBloqueados) {
-            return "$irParaHome$encerrar; pm suspend --user 0 $packageName; $limparRecentes"
+            return "$irParaHome$encerrar; $limparRecentes"
         }
+        // Apps normais: suspender e liberar na sequência é só um empurrão
+        // para o Android esquecer a task nos recentes — dura uma fração de
+        // segundo e o app nunca fica de fato indisponível.
         return "$irParaHome$encerrar; " +
             "pm suspend --user 0 $packageName; " +
             "pm unsuspend --user 0 $packageName; " +
@@ -354,33 +362,36 @@ class AppMonitor(
     }
 
     /**
-     * Bloqueio de verdade, em quatro camadas.
+     * Bloqueio real, sem travar a abertura manual.
      *
      * O force-stop sozinho nunca segurou apps como o Google Play Services: o
      * sistema os religa em segundos por causa de alarmes, jobs e broadcasts
-     * pendentes. As camadas abaixo tiram cada um desses caminhos de volta:
+     * pendentes. As camadas abaixo tiram cada um desses caminhos de volta,
+     * sem usar `pm suspend` — suspender impede até o toque manual do usuário
+     * no ícone (mostra "app não disponível, gerenciado pelo app Shell"), o
+     * que não é bloqueio de segundo plano, é desativar o app por completo:
      *
-     *  1. suspende o pacote — o Android não deixa nada dele iniciar;
-     *  2. corta as permissões de rodar em segundo plano (appops);
-     *  3. joga o app no balde "restricted", sem jobs nem alarmes livres;
-     *  4. encerra o que ainda estiver de pé.
+     *  1. corta as permissões de rodar em segundo plano (appops);
+     *  2. joga o app no balde "restricted", sem jobs nem alarmes livres;
+     *  3. encerra o que ainda estiver de pé.
      *
-     * Tudo é reversível e volta ao normal em [removerBloqueio], que roda ao
-     * desbloquear. Sem Shizuku nada disso está disponível: o Android não
-     * concede esse poder a um app comum, e a função apenas retorna false.
+     * Se o app voltar sozinho mesmo assim, é o [BlockedAppWatcherService] que
+     * detecta e encerra de novo — o usuário sempre pode abrir manualmente,
+     * só não consegue deixá-lo rodando quando sai dele.
+     *
+     * Tudo é reversível e volta ao normal em [removerBloqueio]. Sem Shizuku
+     * nada disso está disponível: o Android não concede esse poder a um app
+     * comum, e a função apenas retorna false.
      */
     suspend fun aplicarBloqueio(packageName: String): Boolean = withContext(Dispatchers.IO) {
         if (!shizuku.isReady || !VALID_PACKAGE.matches(packageName)) return@withContext false
 
-        val comandos = buildList {
-            add("cmd appops set $packageName RUN_IN_BACKGROUND ignore")
-            add("cmd appops set $packageName RUN_ANY_IN_BACKGROUND ignore")
-            add("am set-standby-bucket $packageName restricted")
-            add("am force-stop $packageName")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                add("pm suspend --user 0 $packageName")
-            }
-        }
+        val comandos = listOf(
+            "cmd appops set $packageName RUN_IN_BACKGROUND ignore",
+            "cmd appops set $packageName RUN_ANY_IN_BACKGROUND ignore",
+            "am set-standby-bucket $packageName restricted",
+            "am force-stop $packageName"
+        )
         shizuku.exec(comandos.joinToString("; "))
         true
     }
@@ -390,8 +401,11 @@ class AppMonitor(
         if (!shizuku.isReady || !VALID_PACKAGE.matches(packageName)) return@withContext
 
         val comandos = buildList {
+            // Rede de segurança: versões antigas deste app chegaram a usar
+            // pm suspend para bloquear. Isto desfaz qualquer suspensão que
+            // ainda esteja pendente de uma instalação anterior.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                add("pm unsuspend --user 0 $packageName")
+                add("pm unsuspend --user 0 $packageName 2>/dev/null || true")
             }
             add("cmd appops set $packageName RUN_IN_BACKGROUND allow")
             add("cmd appops set $packageName RUN_ANY_IN_BACKGROUND allow")
@@ -403,19 +417,24 @@ class AppMonitor(
     /**
      * Reaplica o bloqueio de todos os pacotes de uma vez.
      *
-     * Atualizações pela Play Store, troca de usuário e algumas ROMs desfazem a
-     * suspensão por conta própria, e não existe comando confiável em todas as
-     * versões para perguntar "este pacote ainda está suspenso?". Reaplicar é
-     * idempotente e custa uma única ida ao shell, então o vigia simplesmente
-     * repete o comando de tempos em tempos.
+     * Atualizações pela Play Store, troca de usuário e algumas ROMs desfazem
+     * as restrições de appops/standby por conta própria, e não existe comando
+     * confiável em todas as versões para perguntar "este pacote ainda está
+     * restrito?". Reaplicar é idempotente e custa uma única ida ao shell,
+     * então o vigia simplesmente repete o comando de tempos em tempos.
      */
     suspend fun reforcarBloqueios(packages: Collection<String>) = withContext(Dispatchers.IO) {
-        if (!shizuku.isReady || Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            return@withContext
-        }
+        if (!shizuku.isReady) return@withContext
         val alvos = packages.filter { VALID_PACKAGE.matches(it) }
         if (alvos.isEmpty()) return@withContext
-        shizuku.exec(alvos.joinToString("; ") { "pm suspend --user 0 $it" })
+        val comandos = alvos.flatMap { pkg ->
+            listOf(
+                "cmd appops set $pkg RUN_IN_BACKGROUND ignore",
+                "cmd appops set $pkg RUN_ANY_IN_BACKGROUND ignore",
+                "am set-standby-bucket $pkg restricted"
+            )
+        }
+        shizuku.exec(comandos.joinToString("; "))
     }
 
     /**

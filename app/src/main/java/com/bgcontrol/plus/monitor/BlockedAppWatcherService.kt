@@ -181,7 +181,7 @@ class BlockedAppWatcherService : Service() {
         const val ACTION_STOP = "com.bgcontrol.plus.STOP_WATCHER"
 
         /** Ritmo enquanto um app bloqueado está aberto: encerra assim que ele sai. */
-        private const val FAST_INTERVAL_MS = 400L
+        private const val FAST_INTERVAL_MS = 120L
 
         /** Ritmo quando nenhum app bloqueado está em uso. */
         private const val IDLE_INTERVAL_MS = 4_000L

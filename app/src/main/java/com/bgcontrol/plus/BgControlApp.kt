@@ -45,6 +45,22 @@ class BgControlApp : Application() {
                 .collect { container.appMonitor.pacotesBloqueados = it }
         }
 
+        // Correção de instalações antigas: uma versão anterior bloqueava com
+        // pm suspend, que impede até a abertura manual do app ("gerenciado
+        // pelo app Shell"). Isto desfaz essa suspensão em todo app já
+        // bloqueado, uma única vez, sem o usuário precisar desbloquear e
+        // bloquear de novo manualmente.
+        scope.launch {
+            val bloqueados = container.repository.enabledBlockedApps()
+            if (bloqueados.isNotEmpty() && container.appMonitor.shizukuReady()) {
+                bloqueados.forEach { app ->
+                    container.appMonitor.execPrivileged(
+                        "pm unsuspend --user 0 ${app.packageName} 2>/dev/null || true"
+                    )
+                }
+            }
+        }
+
         scope.launch {
             val settings = container.settingsRepository.settings.first()
             // Primeira execução: protege os aplicativos padrão do aparelho para
