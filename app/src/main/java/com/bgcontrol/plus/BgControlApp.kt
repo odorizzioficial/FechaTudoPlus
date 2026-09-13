@@ -49,15 +49,17 @@ class BgControlApp : Application() {
         // pm suspend, que impede até a abertura manual do app ("gerenciado
         // pelo app Shell"). Isto desfaz essa suspensão em todo app já
         // bloqueado, uma única vez, sem o usuário precisar desbloquear e
-        // bloquear de novo manualmente.
+        // bloquear de novo manualmente. Uma única chamada ao shell com todos
+        // os pacotes juntos, em vez de uma chamada por app — no aparelho de
+        // quem tem uma lista grande de bloqueados isso evitava dezenas de
+        // idas ao processo do Shizuku só na abertura do app.
         scope.launch {
             val bloqueados = container.repository.enabledBlockedApps()
             if (bloqueados.isNotEmpty() && container.appMonitor.shizukuReady()) {
-                bloqueados.forEach { app ->
-                    container.appMonitor.execPrivileged(
-                        "pm unsuspend --user 0 ${app.packageName} 2>/dev/null || true"
-                    )
+                val comando = bloqueados.joinToString("; ") { app ->
+                    "pm unsuspend --user 0 ${app.packageName} 2>/dev/null || true"
                 }
+                container.appMonitor.execPrivileged(comando)
             }
         }
 

@@ -5,6 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.FrameLayout
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +62,7 @@ import com.bgcontrol.plus.ui.components.LanguageSelector
 import com.bgcontrol.plus.ui.screens.BlockedScreen
 import com.bgcontrol.plus.ui.screens.FrozenScreen
 import com.bgcontrol.plus.ui.screens.OnboardingDialog
+import com.bgcontrol.plus.ui.screens.WhatsNewDialog
 import com.bgcontrol.plus.ui.screens.RestrictedScreen
 import com.bgcontrol.plus.ui.screens.RunningScreen
 import com.bgcontrol.plus.ui.screens.ScheduleScreen
@@ -92,6 +95,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        esconderBarraDeNavegacao()
         setContentView(R.layout.activity_main)
 
         val container = (application as BgControlApp).container
@@ -150,7 +154,14 @@ class MainActivity : AppCompatActivity() {
                         // a permissão for concedida por qualquer caminho.
                         showOverlayInvite = false,
                         onOverlayAllow = {},
-                        onOverlayDismiss = {}
+                        onOverlayDismiss = {},
+                        // Novidades aparece depois do onboarding (ou já na
+                        // primeira tela, se o onboarding tinha sido feito numa
+                        // versão anterior) sempre que o versionCode instalado
+                        // for mais novo que o último visto.
+                        showWhatsNew = settings.onboardingDone &&
+                            settings.lastSeenVersionCode < BuildConfig.VERSION_CODE,
+                        onWhatsNewDismiss = ::marcarNovidadesVistas
                     )
                   }
                 }
@@ -204,6 +215,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Grava a versão atual como já vista, para a aba Novidades não repetir. */
+    private fun marcarNovidadesVistas() {
+        lifecycleScope.launch {
+            (application as BgControlApp).container.settingsRepository
+                .setLastSeenVersion(BuildConfig.VERSION_CODE)
+        }
+    }
+
     private fun trocarIdioma(language: AppLanguage) {
         lifecycleScope.launch {
             (application as BgControlApp).container.settingsRepository.setLanguage(language)
@@ -213,6 +232,31 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         (application as BgControlApp).container.shizukuManager.refresh()
+        esconderBarraDeNavegacao()
+    }
+
+    /**
+     * Esconde a barra de navegação do Android (gestos ou os três botões).
+     *
+     * O usuário ainda consegue trazer ela de volta temporariamente arrastando
+     * da borda da tela — ela some sozinha de novo depois de um tempo sem uso,
+     * ou na próxima vez que o app ganhar foco. Reaplicado em onResume e em
+     * onWindowFocusChanged porque o sistema costuma trazer a barra de volta
+     * ao alternar de app, abrir um diálogo do sistema (como o de permissões)
+     * ou voltar de segundo plano.
+     */
+    private fun esconderBarraDeNavegacao() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.navigationBars())
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) esconderBarraDeNavegacao()
     }
 }
 
@@ -226,7 +270,9 @@ private fun AppContent(
     showOnboarding: Boolean,
     showOverlayInvite: Boolean,
     onOverlayAllow: () -> Unit,
-    onOverlayDismiss: () -> Unit
+    onOverlayDismiss: () -> Unit,
+    showWhatsNew: Boolean,
+    onWhatsNewDismiss: () -> Unit
 ) {
     var onboardingVisivel by remember(showOnboarding) { mutableStateOf(showOnboarding) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -319,6 +365,14 @@ private fun AppContent(
                 onOnboardingDone()
             }
         )
+    }
+
+    // Aparece assim que o onboarding termina (ou já na primeira tela, se o
+    // usuário já tinha passado pelo onboarding numa versão anterior). Some
+    // sozinha depois que o convite de sobreposição for resolvido, para não
+    // empilhar dois diálogos ao mesmo tempo.
+    if (!onboardingVisivel && !showOverlayInvite && showWhatsNew) {
+        WhatsNewDialog(onDismiss = onWhatsNewDismiss)
     }
 
     // Convite logo no começo: sem a sobreposição a bolha não existe, e o

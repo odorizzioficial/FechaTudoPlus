@@ -241,4 +241,16 @@
     <string name="shizuku_required">앱을 동결하거나 해제하려면 Shizuku가 필요합니다.</string>
     <string name="frozen_empty_title">동결된 앱이 없습니다</string>
     <string name="frozen_empty_description">아래의 추가를 탭하여 동결할 앱을 선택하세요.</string>
+    <string name="whats_new_title">버전 %s의 새로운 기능</string>
+    <string name="whats_new_confirm">확인</string>
+    <string-array name="whats_new_items">
+        <item>신규: 동결 탭 — 앱을 완전히 비활성화, 차단보다 강력하며 메모리를 사용하지 않습니다.</item>
+        <item>수정: 사용 중인 차단된 앱이 더 이상 저절로 닫히지 않습니다.</item>
+        <item>수정: 앱 차단이 더 이상 수동으로 여는 것을 막지 않습니다.</item>
+        <item>고정 알림은 활성화된 경우에만 표시되며, 실수로 지워도 자동으로 다시 나타납니다.</item>
+        <item>플로팅 버블: 불투명도와 크기 조절, 위치 저장, 초기화 버튼 추가.</item>
+        <item>디지털 지갑(Samsung Wallet, Google Wallet, Nubank, PicPay 등)이 기본으로 보호됩니다.</item>
+        <item>Shizuku 연결이 끊기면 자동으로 재연결됩니다.</item>
+        <item>차단된 앱을 종료할 때의 전반적인 성능과 속도가 개선되었습니다.</item>
+    </string-array>
 </resources>

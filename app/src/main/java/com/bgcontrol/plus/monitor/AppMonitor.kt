@@ -156,11 +156,24 @@ class AppMonitor(
         return map
     }
 
+    /**
+     * Descobre qual app está em primeiro plano agora.
+     *
+     * BUG CRÍTICO CORRIGIDO: a janela de consulta era de apenas 60 segundos.
+     * Eventos de uso só disparam na troca de app — se o usuário ficasse mais
+     * de 60 segundos dentro do mesmo aplicativo sem trocar de tela, o evento
+     * de "entrou em primeiro plano" saía da janela consultada, a função
+     * passava a devolver null, e o vigia de bloqueados concluía (errado) que
+     * o app tinha saído de primeiro plano — encerrando um app bloqueado
+     * mesmo com o usuário usando ele naquele instante. A janela agora cobre
+     * as últimas 24 horas: sempre encontra a transição mais recente de
+     * verdade, não importa há quanto tempo o usuário está no mesmo app.
+     */
     fun currentForegroundPackage(): String? {
         if (!PackageUtils.hasUsageStatsPermission(context)) return null
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val now = System.currentTimeMillis()
-        val events = usm.queryEvents(now - 60_000, now)
+        val events = usm.queryEvents(now - JANELA_PRIMEIRO_PLANO_MS, now)
         var last: String? = null
         val event = UsageEvents.Event()
         while (events.hasNextEvent()) {
@@ -504,6 +517,9 @@ class AppMonitor(
     private companion object {
         /** Só nomes de pacote válidos entram na linha de comando. */
         val VALID_PACKAGE = Regex("^[A-Za-z0-9._]+$")
+
+        /** Janela de consulta para descobrir o app em primeiro plano. Ver [currentForegroundPackage]. */
+        const val JANELA_PRIMEIRO_PLANO_MS = 24 * 60 * 60 * 1_000L
 
         /** Tempo entre encerrar e conferir se o processo realmente sumiu. */
         const val VERIFICACAO_MS = 350L

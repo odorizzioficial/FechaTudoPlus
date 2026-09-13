@@ -241,4 +241,16 @@
     <string name="shizuku_required">Necesită Shizuku pentru a îngheța sau dezgheța aplicații.</string>
     <string name="frozen_empty_title">Nicio aplicație înghețată</string>
     <string name="frozen_empty_description">Apasă Adaugă mai jos pentru a alege aplicații de înghețat.</string>
+    <string name="whats_new_title">Noutăți în versiunea %s</string>
+    <string name="whats_new_confirm">Am înțeles</string>
+    <string-array name="whats_new_items">
+        <item>Nou: fila Înghețate — dezactivează complet aplicațiile, mai puternic decât blocarea, fără să consume memorie.</item>
+        <item>Rezolvat: aplicațiile blocate nu se mai închid în timp ce le folosești.</item>
+        <item>Rezolvat: blocarea unei aplicații nu mai împiedică deschiderea ei manuală.</item>
+        <item>Notificarea fixă apare doar când este activată și revine singură dacă este ștearsă din greșeală.</item>
+        <item>Bulă plutitoare: opacitate și dimensiune reglabile, poziție salvată și buton de resetare.</item>
+        <item>Portofelele digitale (Samsung Wallet, Google Wallet, Nubank, PicPay...) sunt protejate implicit.</item>
+        <item>Shizuku se reconectează automat dacă legătura se pierde.</item>
+        <item>Îmbunătățiri generale de performanță și viteză la închiderea aplicațiilor blocate.</item>
+    </string-array>
 </resources>

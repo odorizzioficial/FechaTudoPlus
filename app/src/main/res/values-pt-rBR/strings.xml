@@ -241,4 +241,16 @@
     <string name="shizuku_required">Requer o Shizuku para congelar ou descongelar apps.</string>
     <string name="frozen_empty_title">Nenhum app congelado</string>
     <string name="frozen_empty_description">Toque em Adicionar abaixo para escolher apps para congelar.</string>
+    <string name="whats_new_title">Novidades da versão %s</string>
+    <string name="whats_new_confirm">Entendi</string>
+    <string-array name="whats_new_items">
+        <item>Novo: aba Congelados — desativa apps por completo, mais forte que o bloqueio, sem usar memória.</item>
+        <item>Corrigido: apps bloqueados não fecham mais enquanto você está usando eles.</item>
+        <item>Corrigido: bloquear um app não impede mais de abri-lo manualmente.</item>
+        <item>A notificação fixa só aparece quando ativada, e volta sozinha se for arrastada por engano.</item>
+        <item>Bolha flutuante: opacidade e tamanho ajustáveis, posição salva e botão de reset.</item>
+        <item>Carteiras digitais (Samsung Wallet, Google Wallet, Nubank, PicPay...) protegidas por padrão.</item>
+        <item>O Shizuku reconecta sozinho se a ligação cair.</item>
+        <item>Melhorias gerais de desempenho e velocidade ao encerrar apps bloqueados.</item>
+    </string-array>
 </resources>

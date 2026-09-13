@@ -245,4 +245,16 @@
     <string name="shizuku_required">Requires Shizuku to freeze or unfreeze apps.</string>
     <string name="frozen_empty_title">No frozen apps</string>
     <string name="frozen_empty_description">Tap Add below to choose apps to freeze.</string>
+    <string name="whats_new_title">What\'s new in version %s</string>
+    <string name="whats_new_confirm">Got it</string>
+    <string-array name="whats_new_items">
+        <item>New: Frozen tab — completely disables apps, stronger than blocking, with zero memory use.</item>
+        <item>Fixed: blocked apps no longer close while you\'re actively using them.</item>
+        <item>Fixed: blocking no longer prevents manually opening the app.</item>
+        <item>The persistent notification only appears when enabled, and comes back automatically if swiped away.</item>
+        <item>Floating bubble: adjustable opacity and size, saved position, and a reset button.</item>
+        <item>Digital wallets (Samsung Wallet, Google Wallet, Nubank, PicPay...) are protected by default.</item>
+        <item>Shizuku reconnects automatically if the connection drops.</item>
+        <item>General performance and speed improvements when closing blocked apps.</item>
+    </string-array>
 </resources>

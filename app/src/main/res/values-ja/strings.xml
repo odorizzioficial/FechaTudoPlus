@@ -241,4 +241,16 @@
     <string name="shizuku_required">アプリを凍結・解凍するには Shizuku が必要です。</string>
     <string name="frozen_empty_title">凍結されたアプリはありません</string>
     <string name="frozen_empty_description">下の「追加」をタップして凍結するアプリを選んでください。</string>
+    <string name="whats_new_title">バージョン %s の新機能</string>
+    <string name="whats_new_confirm">了解</string>
+    <string-array name="whats_new_items">
+        <item>新機能：凍結タブ — アプリを完全に無効化。ブロックより強力で、メモリも使用しません。</item>
+        <item>修正：使用中のブロック済みアプリが勝手に閉じなくなりました。</item>
+        <item>修正：アプリをブロックしても手動で開けるようになりました。</item>
+        <item>常駐通知は有効時のみ表示され、誤って消してもすぐに復活します。</item>
+        <item>フローティングバブル：不透明度とサイズを調整可能、位置を記憶、リセットボタンを追加。</item>
+        <item>デジタルウォレット（Samsung Wallet、Google Wallet、Nubank、PicPayなど）を標準で保護。</item>
+        <item>Shizukuの接続が切れた場合、自動的に再接続します。</item>
+        <item>ブロック済みアプリを終了する際の全体的なパフォーマンスと速度を改善。</item>
+    </string-array>
 </resources>

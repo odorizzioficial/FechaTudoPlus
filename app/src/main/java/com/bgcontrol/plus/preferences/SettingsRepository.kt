@@ -64,6 +64,8 @@ data class AppSettings(
     val glassIntensity: Int = 65,
     val onboardingDone: Boolean = false,
     val defaultsSeeded: Boolean = false,
+    /** Último versionCode que já mostrou a aba Novidades. */
+    val lastSeenVersionCode: Int = 0,
     val batteryDialogShown: Boolean = false,
     val quickTileAdded: Boolean = false,
     val persistentNotification: Boolean = false,
@@ -97,6 +99,7 @@ class SettingsRepository(private val context: Context) {
         val GLASS_INTENSITY = intPreferencesKey("glass_intensity")
         val ONBOARDING = booleanPreferencesKey("onboarding_done")
         val DEFAULTS_SEEDED = booleanPreferencesKey("defaults_seeded")
+        val LAST_SEEN_VERSION = intPreferencesKey("last_seen_version_code")
         val BATTERY_DIALOG = booleanPreferencesKey("battery_dialog_shown")
         val QUICK_TILE_ADDED = booleanPreferencesKey("quick_tile_added")
         val PERSISTENT_NOTIFICATION = booleanPreferencesKey("persistent_notification")
@@ -119,6 +122,7 @@ class SettingsRepository(private val context: Context) {
             glassIntensity = (prefs[Keys.GLASS_INTENSITY] ?: 65).coerceIn(0, 100),
             onboardingDone = prefs[Keys.ONBOARDING] ?: false,
             defaultsSeeded = prefs[Keys.DEFAULTS_SEEDED] ?: false,
+            lastSeenVersionCode = prefs[Keys.LAST_SEEN_VERSION] ?: 0,
             batteryDialogShown = prefs[Keys.BATTERY_DIALOG] ?: false,
             quickTileAdded = prefs[Keys.QUICK_TILE_ADDED] ?: false,
             persistentNotification = prefs[Keys.PERSISTENT_NOTIFICATION] ?: false,
@@ -152,6 +156,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setDefaultsSeeded(done: Boolean) =
         context.dataStore.edit { it[Keys.DEFAULTS_SEEDED] = done }.let { }
+
+    /** Marca a versão atual como já vista, para a aba Novidades não repetir. */
+    suspend fun setLastSeenVersion(versionCode: Int) =
+        context.dataStore.edit { it[Keys.LAST_SEEN_VERSION] = versionCode }.let { }
 
     suspend fun setPersistentNotification(enabled: Boolean) =
         context.dataStore.edit { it[Keys.PERSISTENT_NOTIFICATION] = enabled }.let { }

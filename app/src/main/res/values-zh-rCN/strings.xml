@@ -241,4 +241,16 @@
     <string name="shizuku_required">需要 Shizuku 才能冻结或解冻应用。</string>
     <string name="frozen_empty_title">没有冻结的应用</string>
     <string name="frozen_empty_description">点击下方的添加按钮选择要冻结的应用。</string>
+    <string name="whats_new_title">版本 %s 的新功能</string>
+    <string name="whats_new_confirm">知道了</string>
+    <string-array name="whats_new_items">
+        <item>新增：冻结标签页——彻底禁用应用，比拦截更彻底，且不占用内存。</item>
+        <item>修复：使用中的被拦截应用不再自行关闭。</item>
+        <item>修复：拦截应用后仍可正常手动打开。</item>
+        <item>常驻通知仅在启用时显示，被意外划掉后会自动恢复。</item>
+        <item>悬浮球：可调节透明度和大小，记住位置，新增重置按钮。</item>
+        <item>默认保护数字钱包（三星钱包、谷歌钱包、Nubank、PicPay 等）。</item>
+        <item>Shizuku 连接断开后会自动重连。</item>
+        <item>关闭被拦截应用的整体性能和速度有所提升。</item>
+    </string-array>
 </resources>

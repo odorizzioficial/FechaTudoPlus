@@ -241,4 +241,16 @@
     <string name="shizuku_required">ऐप्स को फ्रीज़ या अनफ्रीज़ करने के लिए Shizuku आवश्यक है।</string>
     <string name="frozen_empty_title">कोई ऐप फ्रीज़ नहीं है</string>
     <string name="frozen_empty_description">फ्रीज़ करने के लिए ऐप चुनने हेतु नीचे जोड़ें पर टैप करें।</string>
+    <string name="whats_new_title">संस्करण %s में नया क्या है</string>
+    <string name="whats_new_confirm">समझ गया</string>
+    <string-array name="whats_new_items">
+        <item>नया: फ्रोज़न टैब — ऐप्स को पूरी तरह अक्षम करता है, ब्लॉक से भी मज़बूत, और मेमोरी का उपयोग नहीं करता।</item>
+        <item>ठीक किया गया: उपयोग के दौरान ब्लॉक किए गए ऐप्स अब खुद बंद नहीं होते।</item>
+        <item>ठीक किया गया: ऐप ब्लॉक करने से अब उसे मैन्युअल रूप से खोलने में रुकावट नहीं आती।</item>
+        <item>स्थायी सूचना केवल सक्षम होने पर दिखती है, और गलती से हटाने पर अपने आप वापस आ जाती है।</item>
+        <item>फ़्लोटिंग बबल: समायोज्य पारदर्शिता और आकार, सहेजी गई स्थिति, और रीसेट बटन।</item>
+        <item>डिजिटल वॉलेट (Samsung Wallet, Google Wallet, Nubank, PicPay...) डिफ़ॉल्ट रूप से सुरक्षित।</item>
+        <item>कनेक्शन टूटने पर Shizuku अपने आप फिर से जुड़ जाता है।</item>
+        <item>ब्लॉक किए गए ऐप्स बंद करते समय समग्र प्रदर्शन और गति में सुधार।</item>
+    </string-array>
 </resources>
