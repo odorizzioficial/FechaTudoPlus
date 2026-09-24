@@ -244,13 +244,27 @@
     <string name="whats_new_title">Novedades de la versión %s</string>
     <string name="whats_new_confirm">Entendido</string>
     <string-array name="whats_new_items">
-        <item>Nueva pestaña Congelados: deshabilita apps por completo, más fuerte que el bloqueo, sin usar memoria.</item>
-        <item>Corregido: las apps bloqueadas ya no se cierran mientras las estás usando.</item>
-        <item>Corregido: bloquear una app ya no impide abrirla manualmente.</item>
-        <item>La notificación fija solo aparece cuando está activada, y vuelve sola si se desliza por error.</item>
-        <item>Burbuja flotante: opacidad y tamaño ajustables, posición guardada y botón de reinicio.</item>
-        <item>Carteras digitales (Samsung Wallet, Google Wallet, Nubank, PicPay...) protegidas por defecto.</item>
-        <item>Shizuku se reconecta solo si la conexión se pierde.</item>
-        <item>Mejoras generales de rendimiento y velocidad al cerrar apps bloqueadas.</item>
+        <item>Nuevo: Modo perro guardián — vigila los servicios todo el tiempo y los relanza en cuanto se enciende la pantalla, manteniendo el bloqueo activo aunque Android cierre algo en segundo plano. Viene activado por defecto (Ajustes).</item>
+        <item>Nuevo: retraso por app en Bloqueadas — desliza una app bloqueada hacia la izquierda para configurar un margen (segundos o minutos) antes de cerrarla, útil para compartir o copiar algo rápido.</item>
+        <item>Corregido: a veces las apps no se cerraban en segundo plano o no salían de recientes al minimizar una app bloqueada.</item>
+        <item>Corregido: cerrar una app bloqueada directamente desde la pantalla de recientes ahora también la detiene de forma fiable.</item>
+        <item>Corregido: la app se reconecta con más confianza a Shizuku después de bloquear y desbloquear la pantalla.</item>
+        <item>Notificaciones, superposición, acceso de uso y exención de batería ahora se conceden automáticamente al activar Shizuku en el inicio.</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">Consejo: activar Shizuku primero concede automáticamente todos los permisos de abajo — no hace falta pasar por cada uno.</string>
+    <string name="watchdog_mode">Modo perro guardián</string>
+    <string name="watchdog_mode_desc">Reinicia los servicios en el instante en que se enciende la pantalla, sin esperar la comprobación periódica. Ayuda en dispositivos que cierran apps en segundo plano de forma agresiva.</string>
+    <string name="blocked_delay_hint">Novedad: desliza una app bloqueada hacia la izquierda para configurar un retraso antes de cerrarla — útil cuando necesitas unos segundos para compartir o copiar algo.</string>
+    <string name="blocked_delay_set">Configurar retraso</string>
+    <string name="blocked_delay_edit">Retraso configurado: %s. Toca para cambiar o quitar.</string>
+    <string name="blocked_delay_dialog_title">Retraso para %s</string>
+    <string name="blocked_delay_dialog_body">En vez de cerrar en el instante en que sale de primer plano, espera este tiempo antes. Si vuelves antes, la cuenta se reinicia.</string>
+    <string name="blocked_delay_value_label">Cantidad</string>
+    <string name="blocked_delay_remove">Quitar retraso</string>
+    <string name="delay_unit_seconds">Seg</string>
+    <string name="delay_unit_minutes">Min</string>
+    <string name="delay_unit_hours">Horas</string>
+    <string name="save">Guardar</string>
+    <string name="about_watchdog_title">Modo perro guardián</string>
+    <string name="about_watchdog">Vigila activamente los propios servicios de la app y los relanza en cuanto se enciende o desbloquea la pantalla, en lugar de esperar una comprobación periódica. Esto es lo que mantiene el bloqueo funcionando de forma fiable incluso después de que Android cierre procesos en segundo plano para ahorrar memoria o batería — algo que hacen con frecuencia las marcas más agresivas. Viene activado por defecto; desactívalo en Ajustes si prefieres depender solo de la comprobación periódica, más lenta.</string>
 </resources>

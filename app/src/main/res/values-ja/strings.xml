@@ -244,13 +244,27 @@
     <string name="whats_new_title">バージョン %s の新機能</string>
     <string name="whats_new_confirm">了解</string>
     <string-array name="whats_new_items">
-        <item>新機能：凍結タブ — アプリを完全に無効化。ブロックより強力で、メモリも使用しません。</item>
-        <item>修正：使用中のブロック済みアプリが勝手に閉じなくなりました。</item>
-        <item>修正：アプリをブロックしても手動で開けるようになりました。</item>
-        <item>常駐通知は有効時のみ表示され、誤って消してもすぐに復活します。</item>
-        <item>フローティングバブル：不透明度とサイズを調整可能、位置を記憶、リセットボタンを追加。</item>
-        <item>デジタルウォレット（Samsung Wallet、Google Wallet、Nubank、PicPayなど）を標準で保護。</item>
-        <item>Shizukuの接続が切れた場合、自動的に再接続します。</item>
-        <item>ブロック済みアプリを終了する際の全体的なパフォーマンスと速度を改善。</item>
+        <item>新機能：ウォッチドッグモード — サービスを常時監視し、画面が点灯した瞬間に再起動します。Androidがバックグラウンドで何かを終了させても、ブロック機能が動作し続けます。デフォルトでオン（設定）。</item>
+        <item>新機能：ブロックアプリごとの遅延 — ブロック中のアプリを左にスワイプすると、閉じるまでの猶予時間（秒または分）を設定できます。素早く共有やコピーをしたいときに便利です。</item>
+        <item>修正：ブロック中のアプリを最小化した際、バックグラウンドで終了しなかったり、最近使ったアプリ一覧から消えなかったりする場合がありました。</item>
+        <item>修正：ホームボタンではなく最近使ったアプリ画面から直接ブロック中のアプリを閉じた場合も、確実に停止するようになりました。</item>
+        <item>修正：画面のロックとロック解除の後、Shizukuへの再接続がより確実になりました。</item>
+        <item>オンボーディングでShizukuを有効にすると、通知・他のアプリの上に表示・使用状況へのアクセス・バッテリー最適化の除外が自動的に付与されるようになりました。</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">ヒント：最初にShizukuを有効にすると、以下の権限がすべて自動的に付与されます。ひとつずつ操作する必要はありません。</string>
+    <string name="watchdog_mode">ウォッチドッグモード</string>
+    <string name="watchdog_mode_desc">定期チェックを待たずに、画面が点灯した瞬間にサービスを再起動します。バックグラウンドアプリを積極的に終了させる端末で役立ちます。</string>
+    <string name="blocked_delay_hint">新機能：ブロック中のアプリを左にスワイプすると、閉じるまでの遅延時間を設定できます。共有やコピーのために少し時間が必要なときに便利です。</string>
+    <string name="blocked_delay_set">遅延を設定</string>
+    <string name="blocked_delay_edit">遅延設定：%s。タップして変更または削除。</string>
+    <string name="blocked_delay_dialog_title">%s の遅延</string>
+    <string name="blocked_delay_dialog_body">フォアグラウンドを離れた瞬間に閉じる代わりに、この時間だけ待ちます。それより前に戻ればカウントはリセットされます。</string>
+    <string name="blocked_delay_value_label">数値</string>
+    <string name="blocked_delay_remove">遅延を削除</string>
+    <string name="delay_unit_seconds">秒</string>
+    <string name="delay_unit_minutes">分</string>
+    <string name="delay_unit_hours">時間</string>
+    <string name="save">保存</string>
+    <string name="about_watchdog_title">ウォッチドッグモード</string>
+    <string name="about_watchdog">アプリ自身のサービスを常に監視し、画面が点灯またはロック解除された瞬間に再起動します。定期チェックを待つのではありません。これにより、Androidがメモリやバッテリーを節約するためにバックグラウンドプロセスを終了させた後でも、ブロック機能が確実に動作し続けます。これはより積極的な管理を行うメーカーの端末でよく起こることです。デフォルトでオンになっています。低速な定期チェックだけに頼りたい場合は、設定でオフにできます。</string>
 </resources>

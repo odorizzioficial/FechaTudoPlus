@@ -65,6 +65,11 @@ class AppListRepository(
     suspend fun setBlockedEnabled(packageName: String, enabled: Boolean) =
         blockedDao.setEnabled(packageName, enabled)
 
+    /** Atraso, em segundos, antes de encerrar o app depois que ele sai de
+     *  primeiro plano. Nulo remove o atraso e volta a encerrar na hora. */
+    suspend fun setBlockedDelay(packageName: String, seconds: Int?) =
+        blockedDao.setDelaySeconds(packageName, seconds)
+
     suspend fun removeRestricted(packageName: String) = restrictedDao.delete(packageName)
 
     suspend fun removeBlocked(packageName: String) = blockedDao.delete(packageName)

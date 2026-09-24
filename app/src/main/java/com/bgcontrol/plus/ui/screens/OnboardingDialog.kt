@@ -44,11 +44,13 @@ import com.bgcontrol.plus.viewmodel.AppViewModelFactories
 import com.bgcontrol.plus.viewmodel.SettingsViewModel
 
 /**
- * Primeira abertura: apresenta as três autorizações de que o app depende.
+ * Primeira abertura: apresenta as quatro autorizações de que o app depende.
  *
- * Cada linha mostra o estado real e abre o fluxo oficial do Android quando
- * tocada. O usuário pode sair a qualquer momento em "Agora não" — nada é
- * obrigatório e nada é concedido em silêncio.
+ * Assim que o Shizuku fica pronto, as demais (notificações, sobrepor outros
+ * apps, acesso de uso e a exceção de bateria) são concedidas sozinhas via
+ * shell — o mesmo poder que um cabo USB e `adb shell` dariam. Só a
+ * autorização do Shizuku em si continua manual, feita no próprio app dele;
+ * não tem como pular essa primeira etapa.
  */
 @Composable
 fun OnboardingDialog(
@@ -79,6 +81,31 @@ fun OnboardingDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
+
+                // Aviso destacado: ativar o Shizuku primeiro já resolve o
+                // resto sozinho, sem precisar tocar em cada linha abaixo.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Adb,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.onboarding_shizuku_auto_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 10.dp)
+                    )
+                }
+                Box(modifier = Modifier.padding(bottom = 4.dp))
 
                 StepRow(
                     icon = Icons.Rounded.Visibility,

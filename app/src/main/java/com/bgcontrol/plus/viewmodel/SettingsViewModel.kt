@@ -56,8 +56,16 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch {
+            var jaConcedidas = false
             shizukuManager.state.collect { state ->
                 _uiState.value = _uiState.value.copy(shizukuState = state)
+                // Assim que o Shizuku fica pronto, concede o resto sozinho —
+                // sem precisar o usuário voltar e tocar em cada linha. Só uma
+                // vez por sessão do app, para não repetir a cada recomposição.
+                if (state == ShizukuState.READY && !jaConcedidas) {
+                    jaConcedidas = true
+                    concederPermissoesEssenciaisEAtualizar()
+                }
             }
         }
         refreshSystemState()
@@ -82,7 +90,25 @@ class SettingsViewModel(
             ShizukuState.NOT_INSTALLED -> openShizukuDownloadPage()
             ShizukuState.NOT_RUNNING -> openShizukuApp()
             ShizukuState.PERMISSION_REQUIRED -> shizukuManager.requestPermission()
-            ShizukuState.READY -> shizukuManager.refresh()
+            ShizukuState.READY -> concederPermissoesEssenciaisEAtualizar()
+        }
+    }
+
+    /**
+     * Concede de uma vez, via Shizuku, as permissões que normalmente pedem
+     * uma tela do Android por vez (notificações, sobrepor outros apps,
+     * acesso de uso e a exceção de otimização de bateria).
+     *
+     * Só chega aqui depois que o Shizuku já está pronto — a autorização dele
+     * em si continua manual, é o único passo que não tem como pular.
+     */
+    private fun concederPermissoesEssenciaisEAtualizar() {
+        viewModelScope.launch {
+            val monitor = (getApplication<Application>() as com.bgcontrol.plus.BgControlApp)
+                .container.appMonitor
+            val context = getApplication<Application>()
+            monitor.concederPermissoesEssenciais(context.packageName)
+            refreshSystemState()
         }
     }
 
@@ -101,6 +127,11 @@ class SettingsViewModel(
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://shizuku.rikka.app/"))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { context.startActivity(intent) }
+    }
+
+    /** Liga ou desliga o Modo Cão de Guarda. */
+    fun setWatchdogEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setWatchdogEnabled(enabled) }
     }
 
     /**

@@ -244,13 +244,27 @@
     <string name="whats_new_title">Nouveautés de la version %s</string>
     <string name="whats_new_confirm">Compris</string>
     <string-array name="whats_new_items">
-        <item>Nouveau : onglet Gelées — désactive complètement les apps, plus fort que le blocage, sans utiliser de mémoire.</item>
-        <item>Corrigé : les apps bloquées ne se ferment plus pendant que vous les utilisez.</item>
-        <item>Corrigé : bloquer une app n\'empêche plus de l\'ouvrir manuellement.</item>
-        <item>La notification persistante n\'apparaît que si elle est activée, et revient toute seule si elle est balayée par erreur.</item>
-        <item>Bulle flottante : opacité et taille réglables, position enregistrée et bouton de réinitialisation.</item>
-        <item>Les portefeuilles numériques (Samsung Wallet, Google Wallet, Nubank, PicPay...) sont protégés par défaut.</item>
-        <item>Shizuku se reconnecte automatiquement si la connexion est perdue.</item>
-        <item>Améliorations générales de performance et de rapidité lors de la fermeture des apps bloquées.</item>
+        <item>Nouveau : mode chien de garde — surveille les services en continu et les relance dès que l\'écran s\'allume, pour que le blocage continue de fonctionner même après qu\'Android ait tué quelque chose en arrière-plan. Activé par défaut (Paramètres).</item>
+        <item>Nouveau : délai par app dans Bloquées — glissez une app bloquée vers la gauche pour définir une marge (secondes ou minutes) avant sa fermeture, pratique pour partager ou copier rapidement quelque chose.</item>
+        <item>Corrigé : certaines apps ne se fermaient pas en arrière-plan ou ne quittaient pas les récents lors de la minimisation d\'une app bloquée.</item>
+        <item>Corrigé : fermer une app bloquée directement depuis l\'écran des récents l\'arrête désormais aussi de façon fiable.</item>
+        <item>Corrigé : l\'app se reconnecte plus fiablement à Shizuku après le verrouillage et déverrouillage de l\'écran.</item>
+        <item>Notifications, superposition, accès à l\'usage et exemption de batterie sont désormais accordés automatiquement dès l\'activation de Shizuku au démarrage.</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">Astuce : activer Shizuku en premier accorde automatiquement toutes les autorisations ci-dessous — pas besoin de les faire une par une.</string>
+    <string name="watchdog_mode">Mode chien de garde</string>
+    <string name="watchdog_mode_desc">Relance les services dès que l\'écran s\'allume, sans attendre la vérification périodique. Utile sur les appareils qui tuent agressivement les apps en arrière-plan.</string>
+    <string name="blocked_delay_hint">Nouveau : glissez une app bloquée vers la gauche pour définir un délai avant sa fermeture — utile quand vous avez besoin de quelques secondes pour partager ou copier quelque chose.</string>
+    <string name="blocked_delay_set">Définir un délai</string>
+    <string name="blocked_delay_edit">Délai défini : %s. Touchez pour modifier ou supprimer.</string>
+    <string name="blocked_delay_dialog_title">Délai pour %s</string>
+    <string name="blocked_delay_dialog_body">Au lieu de fermer dès qu\'elle quitte le premier plan, attend ce temps avant. Si vous revenez avant, le compte à rebours recommence.</string>
+    <string name="blocked_delay_value_label">Quantité</string>
+    <string name="blocked_delay_remove">Supprimer le délai</string>
+    <string name="delay_unit_seconds">Sec</string>
+    <string name="delay_unit_minutes">Min</string>
+    <string name="delay_unit_hours">Heures</string>
+    <string name="save">Enregistrer</string>
+    <string name="about_watchdog_title">Mode chien de garde</string>
+    <string name="about_watchdog">Surveille activement les propres services de l\'app et les relance dès que l\'écran s\'allume ou se déverrouille, au lieu d\'attendre une vérification périodique. C\'est ce qui permet au blocage de continuer à fonctionner de manière fiable même après qu\'Android ait tué des processus en arrière-plan pour économiser la mémoire ou la batterie — ce que font souvent les marques les plus agressives. Activé par défaut ; désactivez-le dans les Paramètres si vous préférez ne dépendre que de la vérification périodique, plus lente.</string>
 </resources>

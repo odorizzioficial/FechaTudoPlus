@@ -31,6 +31,9 @@ interface BlockedAppDao {
     @Query("UPDATE blocked_apps SET isEnabled = :enabled WHERE packageName = :packageName")
     suspend fun setEnabled(packageName: String, enabled: Boolean)
 
+    @Query("UPDATE blocked_apps SET delaySeconds = :seconds WHERE packageName = :packageName")
+    suspend fun setDelaySeconds(packageName: String, seconds: Int?)
+
     @Query(
         """
         UPDATE blocked_apps

@@ -63,6 +63,13 @@ data class AppSettings(
     /** Intensidade do vidro, de 0 (sólido) a 100 (translucidez máxima). */
     val glassIntensity: Int = 65,
     val onboardingDone: Boolean = false,
+    /**
+     * Modo Cão de Guarda: relança os serviços na hora quando a tela liga ou
+     * é desbloqueada, em vez de esperar o próximo alarme periódico. Ligado
+     * por padrão — desligar volta a depender só do alarme de 10 em 10
+     * minutos.
+     */
+    val watchdogEnabled: Boolean = true,
     val defaultsSeeded: Boolean = false,
     /** Último versionCode que já mostrou a aba Novidades. */
     val lastSeenVersionCode: Int = 0,
@@ -98,6 +105,7 @@ class SettingsRepository(private val context: Context) {
         val GLASS_ENABLED = booleanPreferencesKey("glass_enabled")
         val GLASS_INTENSITY = intPreferencesKey("glass_intensity")
         val ONBOARDING = booleanPreferencesKey("onboarding_done")
+        val WATCHDOG_ENABLED = booleanPreferencesKey("watchdog_enabled")
         val DEFAULTS_SEEDED = booleanPreferencesKey("defaults_seeded")
         val LAST_SEEN_VERSION = intPreferencesKey("last_seen_version_code")
         val BATTERY_DIALOG = booleanPreferencesKey("battery_dialog_shown")
@@ -121,6 +129,7 @@ class SettingsRepository(private val context: Context) {
             glassEnabled = prefs[Keys.GLASS_ENABLED] ?: true,
             glassIntensity = (prefs[Keys.GLASS_INTENSITY] ?: 65).coerceIn(0, 100),
             onboardingDone = prefs[Keys.ONBOARDING] ?: false,
+            watchdogEnabled = prefs[Keys.WATCHDOG_ENABLED] ?: true,
             defaultsSeeded = prefs[Keys.DEFAULTS_SEEDED] ?: false,
             lastSeenVersionCode = prefs[Keys.LAST_SEEN_VERSION] ?: 0,
             batteryDialogShown = prefs[Keys.BATTERY_DIALOG] ?: false,
@@ -153,6 +162,9 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setOnboardingDone(done: Boolean) =
         context.dataStore.edit { it[Keys.ONBOARDING] = done }.let { }
+
+    suspend fun setWatchdogEnabled(enabled: Boolean) =
+        context.dataStore.edit { it[Keys.WATCHDOG_ENABLED] = enabled }.let { }
 
     suspend fun setDefaultsSeeded(done: Boolean) =
         context.dataStore.edit { it[Keys.DEFAULTS_SEEDED] = done }.let { }

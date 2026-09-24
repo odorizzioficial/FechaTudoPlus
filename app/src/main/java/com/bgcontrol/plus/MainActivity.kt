@@ -310,7 +310,7 @@ private fun AppContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 16.dp, vertical = 0.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 LanguageSelector(

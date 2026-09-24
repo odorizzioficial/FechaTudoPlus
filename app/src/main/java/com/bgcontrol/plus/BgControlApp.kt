@@ -3,6 +3,7 @@ package com.bgcontrol.plus
 import android.app.Application
 import com.bgcontrol.plus.monitor.BlockedAppWatcherService
 import com.bgcontrol.plus.monitor.KeepAliveService
+import com.bgcontrol.plus.monitor.WatchdogReceiver
 import com.bgcontrol.plus.quick.QuickAccessService
 import com.bgcontrol.plus.schedule.ScheduleAlarms
 import com.bgcontrol.plus.util.DefaultProtectedApps
@@ -32,6 +33,13 @@ class BgControlApp : Application() {
         // outra coisa. Ele é a âncora que mantém o processo vivo mesmo quando
         // o usuário fecha o aplicativo ou o sistema tenta libertar memória.
         KeepAliveService.start(this)
+
+        // Modo Cão de Guarda: relança os serviços na hora quando a tela liga
+        // ou é desbloqueada, sem esperar o alarme de 1 em 1 minuto. A
+        // própria checagem interna respeita a preferência do usuário — o
+        // registro do receptor continua acontecendo sempre, é só um "ouvinte"
+        // até que o momento de agir chegue.
+        WatchdogReceiver.registrar(this)
 
         // Quem encerra aplicativos precisa saber quais estão bloqueados, senão
         // o passo que limpa a tela de recentes libera o pacote logo depois de

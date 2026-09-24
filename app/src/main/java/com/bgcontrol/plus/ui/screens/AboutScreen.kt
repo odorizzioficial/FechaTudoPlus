@@ -160,6 +160,14 @@ fun AboutScreen(
                 body = stringResource(R.string.about_mode_bubble)
             )
         }
+        item {
+            AboutSection(
+                icon = Icons.Rounded.Shield,
+                tint = MaterialTheme.colorScheme.error,
+                title = stringResource(R.string.about_watchdog_title),
+                body = stringResource(R.string.about_watchdog)
+            )
+        }
 
         // Seção Shizuku
         item {

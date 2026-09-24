@@ -244,13 +244,27 @@
     <string name="whats_new_title">Novidades da versão %s</string>
     <string name="whats_new_confirm">Entendi</string>
     <string-array name="whats_new_items">
-        <item>Novo: separador Congelados — desativa aplicações por completo, mais forte que o bloqueio, sem usar memória.</item>
-        <item>Corrigido: aplicações bloqueadas já não fecham enquanto as está a usar.</item>
-        <item>Corrigido: bloquear uma aplicação já não impede de a abrir manualmente.</item>
-        <item>A notificação fixa só aparece quando ativada, e volta sozinha se for arrastada por engano.</item>
-        <item>Bolha flutuante: opacidade e tamanho ajustáveis, posição guardada e botão de reposição.</item>
-        <item>Carteiras digitais (Samsung Wallet, Google Wallet, Nubank, PicPay...) protegidas por predefinição.</item>
-        <item>O Shizuku volta a ligar-se sozinho se a ligação cair.</item>
-        <item>Melhorias gerais de desempenho e velocidade ao encerrar aplicações bloqueadas.</item>
+        <item>Novo: Modo Cão de Guarda — fica de olho nos serviços o tempo todo e relança tudo assim que o ecrã liga, mantendo o bloqueio a funcionar mesmo depois do Android matar algo em segundo plano. Vem ligado por predefinição (Configurações).</item>
+        <item>Novo: atraso por aplicação no separador Bloqueadas — arraste uma app bloqueada para a esquerda e configure uma margem (segundos ou minutos) antes de fechar, útil para partilhar ou copiar algo rapidamente.</item>
+        <item>Corrigido: aplicações por vezes não encerravam em segundo plano ou não saíam dos recentes ao minimizar uma aplicação bloqueada.</item>
+        <item>Corrigido: fechar uma aplicação bloqueada diretamente pelo ecrã de recentes agora também a encerra de forma fiável.</item>
+        <item>Corrigido: a app reconecta com mais confiança ao Shizuku depois de bloquear e desbloquear o ecrã.</item>
+        <item>Notificações, sobrepor outras apps, acesso de uso e isenção de bateria agora são concedidos automaticamente assim que o Shizuku é ativado no início.</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">Dica: ativar o Shizuku primeiro já concede todas as permissões abaixo sozinho — não precisa passar por cada uma.</string>
+    <string name="watchdog_mode">Modo Cão de Guarda</string>
+    <string name="watchdog_mode_desc">Relança os serviços assim que o ecrã liga, sem esperar pela verificação periódica. Ajuda em aparelhos que matam aplicações em segundo plano de forma agressiva.</string>
+    <string name="blocked_delay_hint">Novidade: arraste uma aplicação bloqueada para a esquerda para configurar um atraso antes de fechar — útil quando precisa de alguns segundos para partilhar ou copiar algo.</string>
+    <string name="blocked_delay_set">Configurar atraso</string>
+    <string name="blocked_delay_edit">Atraso configurado: %s. Toque para alterar ou remover.</string>
+    <string name="blocked_delay_dialog_title">Atraso para %s</string>
+    <string name="blocked_delay_dialog_body">Em vez de encerrar assim que sair de primeiro plano, espera esse tempo antes. Se voltar antes disso, a contagem reinicia.</string>
+    <string name="blocked_delay_value_label">Quantidade</string>
+    <string name="blocked_delay_remove">Remover atraso</string>
+    <string name="delay_unit_seconds">Seg</string>
+    <string name="delay_unit_minutes">Min</string>
+    <string name="delay_unit_hours">Horas</string>
+    <string name="save">Guardar</string>
+    <string name="about_watchdog_title">Modo Cão de Guarda</string>
+    <string name="about_watchdog">Fica de olho nos próprios serviços da app o tempo todo, e relança tudo assim que o ecrã liga ou é desbloqueado, em vez de esperar por uma verificação periódica. É isto que mantém o bloqueio a funcionar de forma fiável mesmo depois de o Android matar processos em segundo plano para poupar memória ou bateria — algo que fabricantes mais agressivos fazem com frequência. Vem ligado por predefinição; desative nas Configurações se preferir depender só da verificação periódica, mais lenta.</string>
 </resources>

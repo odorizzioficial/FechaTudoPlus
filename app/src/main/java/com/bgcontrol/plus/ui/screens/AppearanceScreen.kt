@@ -58,14 +58,14 @@ fun AppearanceScreen(
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = 8.dp,
+            top = 0.dp,
             bottom = bottomBarContentPadding().calculateBottomPadding()
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Rounded.ArrowBack,
                         contentDescription = stringResource(R.string.back),

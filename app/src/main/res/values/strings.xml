@@ -248,13 +248,27 @@
     <string name="whats_new_title">What\'s new in version %s</string>
     <string name="whats_new_confirm">Got it</string>
     <string-array name="whats_new_items">
-        <item>New: Frozen tab — completely disables apps, stronger than blocking, with zero memory use.</item>
-        <item>Fixed: blocked apps no longer close while you\'re actively using them.</item>
-        <item>Fixed: blocking no longer prevents manually opening the app.</item>
-        <item>The persistent notification only appears when enabled, and comes back automatically if swiped away.</item>
-        <item>Floating bubble: adjustable opacity and size, saved position, and a reset button.</item>
-        <item>Digital wallets (Samsung Wallet, Google Wallet, Nubank, PicPay...) are protected by default.</item>
-        <item>Shizuku reconnects automatically if the connection drops.</item>
-        <item>General performance and speed improvements when closing blocked apps.</item>
+        <item>New: Watchdog Mode — actively watches your services and relaunches them the instant the screen turns on, so blocking keeps working even after Android kills things in the background. On by default (Settings).</item>
+        <item>New: per-app delay for Blocked apps — swipe a blocked app left to set a grace period (seconds or minutes) before it closes, handy for quickly sharing or copying something.</item>
+        <item>Fixed: apps sometimes not closing in the background or not clearing from Recents when a blocked app is minimized.</item>
+        <item>Fixed: closing a blocked app directly from the Recents screen (instead of the Home button) now reliably stops it too.</item>
+        <item>Fixed: the app reconnects more reliably to Shizuku after the screen is locked and unlocked.</item>
+        <item>Notifications, overlay, usage access and battery exemption are now granted automatically once Shizuku is activated in onboarding.</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">Tip: activating Shizuku first automatically grants all the permissions below — no need to go through them one by one.</string>
+    <string name="watchdog_mode">Watchdog mode</string>
+    <string name="watchdog_mode_desc">Relaunches services the instant the screen turns on, without waiting for the periodic check. Helps on devices that aggressively kill background apps.</string>
+    <string name="blocked_delay_hint">New: swipe a blocked app to the left to set a delay before it closes — useful when you need a few seconds to share or copy something.</string>
+    <string name="blocked_delay_set">Set delay</string>
+    <string name="blocked_delay_edit">Delay set: %s. Tap to change or remove.</string>
+    <string name="blocked_delay_dialog_title">Delay for %s</string>
+    <string name="blocked_delay_dialog_body">Instead of closing the instant it leaves the foreground, wait this long first. If you come back before that, the countdown resets.</string>
+    <string name="blocked_delay_value_label">Amount</string>
+    <string name="blocked_delay_remove">Remove delay</string>
+    <string name="delay_unit_seconds">Sec</string>
+    <string name="delay_unit_minutes">Min</string>
+    <string name="delay_unit_hours">Hours</string>
+    <string name="save">Save</string>
+    <string name="about_watchdog_title">Watchdog Mode</string>
+    <string name="about_watchdog">Actively watches the app\'s own services and relaunches them the instant the screen turns on or unlocks, instead of waiting for a periodic check. This is what keeps blocking working reliably even after Android kills background processes to save memory or battery — something more aggressive phone brands do often. On by default; turn it off in Settings if you\'d rather rely only on the slower periodic check.</string>
 </resources>

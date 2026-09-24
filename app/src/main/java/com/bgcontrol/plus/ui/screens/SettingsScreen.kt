@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Dashboard
@@ -31,6 +32,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -246,6 +249,32 @@ fun SettingsScreen(
             )
         }
 
+        // Cão de Guarda: relança os serviços na hora quando a tela liga,
+        // sem esperar o alarme periódico. Ajuda em aparelhos que matam
+        // serviços em segundo plano de forma agressiva.
+        item {
+            SettingsCard(
+                icon = Icons.Rounded.Shield,
+                iconTint = Palette.AccentSchedule.takeIf { LocalDarkTheme.current }
+                    ?: Palette.LightAccentSchedule,
+                title = stringResource(R.string.watchdog_mode),
+                subtitle = stringResource(R.string.watchdog_mode_desc),
+                onClick = { viewModel.setWatchdogEnabled(!state.settings.watchdogEnabled) },
+                trailing = {
+                    Switch(
+                        checked = state.settings.watchdogEnabled,
+                        onCheckedChange = viewModel::setWatchdogEnabled,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    )
+                }
+            )
+        }
+
         // Tudo que encerra sem abrir o app: bloco, notificação fixa e bolha.
         item {
             SettingsCard(
@@ -258,17 +287,8 @@ fun SettingsScreen(
             )
         }
 
-        item {
-            SettingsCard(
-                icon = Icons.Rounded.Language,
-                iconTint = AppTab.RESTRICTED.accent(),
-                title = stringResource(R.string.language),
-                subtitle = "${state.settings.language.flag} ${state.settings.language.displayName}",
-                onClick = { languageDialog = true },
-                trailing = { ChevronIcon() }
-            )
-        }
-
+        // Aparência: perto do topo, junto com o resto dos ajustes mais
+        // usados — não faz sentido deixar escondida perto do fim da lista.
         item {
             SettingsCard(
                 icon = Icons.Rounded.DarkMode,
@@ -276,6 +296,17 @@ fun SettingsScreen(
                 title = stringResource(R.string.appearance),
                 subtitle = stringResource(R.string.appearance_subtitle),
                 onClick = { appearanceOpen = true },
+                trailing = { ChevronIcon() }
+            )
+        }
+
+        item {
+            SettingsCard(
+                icon = Icons.Rounded.Language,
+                iconTint = AppTab.RESTRICTED.accent(),
+                title = stringResource(R.string.language),
+                subtitle = "${state.settings.language.flag} ${state.settings.language.displayName}",
+                onClick = { languageDialog = true },
                 trailing = { ChevronIcon() }
             )
         }

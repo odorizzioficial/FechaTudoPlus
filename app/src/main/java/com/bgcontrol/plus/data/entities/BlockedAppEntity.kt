@@ -20,5 +20,13 @@ data class BlockedAppEntity(
     val lastActionAt: Long? = null,
     val lastActionSucceeded: Boolean? = null,
     val lastReclaimedBytes: Long? = null,
-    val totalReclaimedBytes: Long = 0L
+    val totalReclaimedBytes: Long = 0L,
+    /**
+     * Atraso, em segundos, antes de encerrar este app depois que ele sai de
+     * primeiro plano. Nulo ou zero = encerra na hora, como sempre foi. Um
+     * valor positivo dá essa margem antes de agir — útil para apps como
+     * redes sociais, quando o usuário só precisa sair rapidinho para
+     * compartilhar ou copiar algo e volta em seguida.
+     */
+    val delaySeconds: Int? = null
 )

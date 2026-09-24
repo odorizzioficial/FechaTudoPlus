@@ -142,7 +142,19 @@ class ShizukuManager(private val context: Context) {
     fun isShizukuInstalled(): Boolean = installedManagerPackage() != null
 
     fun refresh() {
-        _state.value = computeState()
+        val novoEstado = computeState()
+        // Se o Shizuku acabou de voltar a ficar pronto (veio de qualquer
+        // outro estado), descarta a conexão de serviço guardada antes de
+        // atualizar o estado — mesmo que pareça válida, ela pode estar
+        // "morta" por dentro se o processo do Shizuku foi reiniciado sem
+        // avisar direito (o onServiceDisconnected nem sempre dispara a
+        // tempo nesses casos). Isso força ensureService() a pedir uma
+        // conexão nova da próxima vez, em vez de reaproveitar uma referência
+        // que pode falhar silenciosamente em todo exec().
+        if (novoEstado == ShizukuState.READY && _state.value != ShizukuState.READY) {
+            userService = null
+        }
+        _state.value = novoEstado
     }
 
     private fun computeState(): ShizukuState {

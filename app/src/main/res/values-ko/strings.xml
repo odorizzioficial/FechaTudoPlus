@@ -244,13 +244,27 @@
     <string name="whats_new_title">버전 %s의 새로운 기능</string>
     <string name="whats_new_confirm">확인</string>
     <string-array name="whats_new_items">
-        <item>신규: 동결 탭 — 앱을 완전히 비활성화, 차단보다 강력하며 메모리를 사용하지 않습니다.</item>
-        <item>수정: 사용 중인 차단된 앱이 더 이상 저절로 닫히지 않습니다.</item>
-        <item>수정: 앱 차단이 더 이상 수동으로 여는 것을 막지 않습니다.</item>
-        <item>고정 알림은 활성화된 경우에만 표시되며, 실수로 지워도 자동으로 다시 나타납니다.</item>
-        <item>플로팅 버블: 불투명도와 크기 조절, 위치 저장, 초기화 버튼 추가.</item>
-        <item>디지털 지갑(Samsung Wallet, Google Wallet, Nubank, PicPay 등)이 기본으로 보호됩니다.</item>
-        <item>Shizuku 연결이 끊기면 자동으로 재연결됩니다.</item>
-        <item>차단된 앱을 종료할 때의 전반적인 성능과 속도가 개선되었습니다.</item>
+        <item>신규: 워치독 모드 — 서비스를 계속 지켜보다가 화면이 켜지는 즉시 다시 실행합니다. Android가 백그라운드에서 무언가를 종료해도 차단 기능이 계속 작동합니다. 기본적으로 켜져 있음(설정).</item>
+        <item>신규: 차단된 앱별 지연 — 차단된 앱을 왼쪽으로 스와이프하면 닫히기 전 유예 시간(초 또는 분)을 설정할 수 있습니다. 빠르게 공유하거나 복사할 때 유용합니다.</item>
+        <item>수정: 차단된 앱을 최소화할 때 가끔 백그라운드에서 종료되지 않거나 최근 항목에서 사라지지 않는 문제.</item>
+        <item>수정: 홈 버튼 대신 최근 항목 화면에서 직접 차단된 앱을 닫아도 이제 안정적으로 중지됩니다.</item>
+        <item>수정: 화면을 잠그고 잠금 해제한 후 Shizuku에 더 안정적으로 다시 연결됩니다.</item>
+        <item>온보딩에서 Shizuku를 활성화하면 알림, 다른 앱 위에 표시, 사용 정보 접근, 배터리 최적화 제외가 이제 자동으로 부여됩니다.</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">팁: Shizuku를 먼저 활성화하면 아래의 모든 권한이 자동으로 부여됩니다. 하나씩 진행할 필요가 없습니다.</string>
+    <string name="watchdog_mode">워치독 모드</string>
+    <string name="watchdog_mode_desc">주기적인 확인을 기다리지 않고 화면이 켜지는 즉시 서비스를 재시작합니다. 백그라운드 앱을 적극적으로 종료하는 기기에서 도움이 됩니다.</string>
+    <string name="blocked_delay_hint">새 기능: 차단된 앱을 왼쪽으로 스와이프하면 닫히기 전 지연 시간을 설정할 수 있습니다. 공유하거나 복사할 때 몇 초가 필요할 때 유용합니다.</string>
+    <string name="blocked_delay_set">지연 설정</string>
+    <string name="blocked_delay_edit">지연 설정됨: %s. 탭하여 변경하거나 제거하세요.</string>
+    <string name="blocked_delay_dialog_title">%s의 지연</string>
+    <string name="blocked_delay_dialog_body">전면에서 벗어나는 즉시 종료하는 대신 이 시간만큼 기다립니다. 그 전에 돌아오면 카운트다운이 초기화됩니다.</string>
+    <string name="blocked_delay_value_label">수량</string>
+    <string name="blocked_delay_remove">지연 제거</string>
+    <string name="delay_unit_seconds">초</string>
+    <string name="delay_unit_minutes">분</string>
+    <string name="delay_unit_hours">시간</string>
+    <string name="save">저장</string>
+    <string name="about_watchdog_title">워치독 모드</string>
+    <string name="about_watchdog">앱 자체 서비스를 계속 지켜보다가, 주기적인 확인을 기다리지 않고 화면이 켜지거나 잠금 해제되는 즉시 다시 실행합니다. 이것이 Android가 메모리나 배터리 절약을 위해 백그라운드 프로세스를 종료한 후에도 차단 기능이 안정적으로 작동하는 이유입니다. 더 공격적으로 관리하는 제조사의 기기에서 자주 발생하는 일입니다. 기본적으로 켜져 있으며, 느린 주기적 확인에만 의존하고 싶다면 설정에서 끌 수 있습니다.</string>
 </resources>

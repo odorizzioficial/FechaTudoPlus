@@ -244,13 +244,27 @@
     <string name="whats_new_title">版本 %s 的新功能</string>
     <string name="whats_new_confirm">知道了</string>
     <string-array name="whats_new_items">
-        <item>新增：冻结标签页——彻底禁用应用，比拦截更彻底，且不占用内存。</item>
-        <item>修复：使用中的被拦截应用不再自行关闭。</item>
-        <item>修复：拦截应用后仍可正常手动打开。</item>
-        <item>常驻通知仅在启用时显示，被意外划掉后会自动恢复。</item>
-        <item>悬浮球：可调节透明度和大小，记住位置，新增重置按钮。</item>
-        <item>默认保护数字钱包（三星钱包、谷歌钱包、Nubank、PicPay 等）。</item>
-        <item>Shizuku 连接断开后会自动重连。</item>
-        <item>关闭被拦截应用的整体性能和速度有所提升。</item>
+        <item>新增：看门狗模式——持续监视各项服务，屏幕点亮的瞬间立即重启它们，即使 Android 在后台杀死了进程，拦截功能依然有效。默认开启（设置中）。</item>
+        <item>新增：拦截列表中的单个应用延迟——向左滑动被拦截的应用，可设置关闭前的宽限时间（秒或分钟），方便快速分享或复制内容。</item>
+        <item>修复：被拦截的应用最小化后有时不会在后台关闭，也不会从最近任务中消失。</item>
+        <item>修复：直接从最近任务屏幕关闭被拦截的应用（而不是按主页键）现在也能可靠地停止它。</item>
+        <item>修复：锁屏和解锁后，应用与 Shizuku 的重新连接更加可靠。</item>
+        <item>现在，一旦在引导流程中激活 Shizuku，通知、悬浮窗、使用情况访问和电池豁免都会自动授予。</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">提示：先激活 Shizuku 会自动授予下面的所有权限，不需要逐一操作。</string>
+    <string name="watchdog_mode">看门狗模式</string>
+    <string name="watchdog_mode_desc">屏幕点亮的瞬间立即重启服务，无需等待周期性检查。有助于在会主动杀死后台应用的设备上使用。</string>
+    <string name="blocked_delay_hint">新功能：向左滑动被拦截的应用可以设置关闭前的延迟时间——需要几秒钟分享或复制内容时很有用。</string>
+    <string name="blocked_delay_set">设置延迟</string>
+    <string name="blocked_delay_edit">已设置延迟：%s。点击可修改或移除。</string>
+    <string name="blocked_delay_dialog_title">%s 的延迟</string>
+    <string name="blocked_delay_dialog_body">离开前台后不会立即关闭，而是先等待这段时间。如果在此之前返回，计时会重新开始。</string>
+    <string name="blocked_delay_value_label">数量</string>
+    <string name="blocked_delay_remove">移除延迟</string>
+    <string name="delay_unit_seconds">秒</string>
+    <string name="delay_unit_minutes">分钟</string>
+    <string name="delay_unit_hours">小时</string>
+    <string name="save">保存</string>
+    <string name="about_watchdog_title">看门狗模式</string>
+    <string name="about_watchdog">主动监视应用自身的服务，屏幕点亮或解锁的瞬间立即重启它们，而不是等待周期性检查。这正是即使 Android 为节省内存或电池而杀死后台进程后，拦截功能依然能可靠运行的原因——这是一些管理更激进的手机品牌经常会做的事。默认开启；如果你更倾向只依赖较慢的周期性检查，可以在设置中关闭它。</string>
 </resources>

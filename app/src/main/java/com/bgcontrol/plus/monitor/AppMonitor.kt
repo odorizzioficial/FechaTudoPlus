@@ -186,6 +186,43 @@ class AppMonitor(
         return last
     }
 
+    /**
+     * Mesma pergunta que [currentForegroundPackage], mas lida direto do
+     * gerenciador de janelas via shell, sem passar pelo banco de estatísticas
+     * de uso do Android.
+     *
+     * Em alguns aparelhos Samsung (relatado em Android 13/One UI 5.1), esse
+     * banco só é gravado a cada dezenas de segundos por conta de otimizações
+     * de bateria da própria fabricante — usado como reserva; a fonte
+     * principal é o histórico de uso do Android em [currentForegroundPackage].
+     */
+    private suspend fun currentForegroundPackageViaShell(): String? {
+        if (!shizuku.isReady) return null
+        val resultado = shizuku.exec("dumpsys window | grep -m1 mCurrentFocus") ?: return null
+        return FOCO_JANELA.find(resultado.output)?.groupValues?.get(1)
+    }
+
+    /**
+     * Descobre o app em primeiro plano preferindo o histórico de uso do
+     * Android e caindo para a leitura em tempo real via shell só quando a
+     * permissão de acesso de uso não está concedida ou a consulta falha.
+     */
+    /**
+     * Descobre o app em primeiro plano preferindo a leitura em tempo real via
+     * shell, com o histórico de uso do Android como reserva.
+     *
+     * Em algumas versões mais antigas do One UI (relatado em Android 13/One
+     * UI 5.1), o histórico de uso pode demorar a gravar — mas ele nunca
+     * volta vazio, só desatualizado, e como sempre responde alguma coisa
+     * (mesmo que errada), usá-lo como primeira fonte fazia a leitura em
+     * tempo real via shell nunca ser sequer tentada como conferência. A
+     * leitura em tempo real não depende de nenhum banco gravado com atraso,
+     * então é a fonte mais confiável quando o Shizuku está disponível — o
+     * histórico de uso fica só como reserva para quando ele não está.
+     */
+    suspend fun currentForegroundPackageRapido(): String? =
+        currentForegroundPackageViaShell() ?: currentForegroundPackage()
+
     private fun recentlyUsedPackages(): List<String> {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val now = System.currentTimeMillis()
@@ -221,6 +258,41 @@ class AppMonitor(
 
     /** Executa um comando privilegiado arbitrário via Shizuku. */
     suspend fun execPrivileged(cmd: String) = shizuku.exec(cmd)
+
+    /**
+     * Concede de uma vez, via Shizuku, as permissões que normalmente exigem
+     * navegar até uma tela do Android e tocar em conceder manualmente.
+     *
+     * Só é possível porque o Shizuku já dá o mesmo nível de acesso que o
+     * comando `adb shell` — e é exatamente isso que o `adb shell pm grant` e
+     * o `adb shell appops set` fazem manualmente quando alguém mexe no
+     * celular pelo computador. Aqui é o mesmo poder, só que através do
+     * Shizuku em vez de um cabo USB.
+     *
+     *  - Notificações: uma permissão de execução normal, concedida com `pm
+     *    grant`.
+     *  - Sobrepor outros apps e Acesso de uso: não são permissões comuns,
+     *    são liberações de "appops" — o mesmo mecanismo usado pelo Android
+     *    para controlar esse tipo de acesso especial. `appops set` também
+     *    funciona com privilégio de shell.
+     *  - Bateria: adiciona o próprio pacote à lista de exceções de
+     *    otimização de bateria do sistema (`dumpsys deviceidle whitelist`).
+     *
+     * O Shizuku em si continua exigindo a autorização manual de sempre —
+     * não tem como pular essa primeira etapa, é o próprio mecanismo que dá
+     * acesso a tudo o resto.
+     */
+    suspend fun concederPermissoesEssenciais(pacote: String): Boolean {
+        if (!shizuku.isReady) return false
+        val comandos = listOf(
+            "pm grant $pacote android.permission.POST_NOTIFICATIONS",
+            "appops set $pacote SYSTEM_ALERT_WINDOW allow",
+            "appops set $pacote GET_USAGE_STATS allow",
+            "dumpsys deviceidle whitelist +$pacote"
+        )
+        shizuku.exec(comandos.joinToString(" 2>/dev/null; ") + " 2>/dev/null")
+        return true
+    }
 
     suspend fun stopApp(packageName: String): Boolean = withContext(Dispatchers.IO) {
         if (!VALID_PACKAGE.matches(packageName)) return@withContext false
@@ -295,41 +367,28 @@ class AppMonitor(
     /**
      * Segunda garantia de que nenhum pacote ficou suspenso por acidente.
      *
-     * Os bloqueados são a exceção: para eles a suspensão é o bloqueio, e
-     * liberá-los aqui era exatamente o que fazia o app voltar sozinho.
+     * Bloqueio não usa mais suspensão permanente (ver [comandoEncerrar]) —
+     * qualquer pacote passado aqui deve simplesmente ser liberado, bloqueado
+     * ou não. Uma versão anterior pulava os bloqueados de propósito, quando a
+     * suspensão ainda era o mecanismo de bloqueio; manter esse pulo agora
+     * arriscava deixar um app bloqueado preso suspenso por acidente num
+     * retry, repetindo o mesmo bug que já foi corrigido.
      */
     private suspend fun garantirLiberados(packages: List<String>) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
-        val bloqueados = pacotesBloqueados
-        val alvos = packages.filterNot { it in bloqueados }
-        if (alvos.isEmpty()) return
-        shizuku.exec(alvos.joinToString("; ") { "pm unsuspend --user 0 $it" })
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || packages.isEmpty()) return
+        shizuku.exec(packages.joinToString("; ") { "pm unsuspend --user 0 $it" })
     }
 
-    /**
-     * Encerra o processo e tira o cartao do aplicativo da tela de recentes.
-     *
-     * O `am force-stop` sozinho derruba o processo, mas em varias ROMs o cartao
-     * continua la. Suspender e liberar o pacote na sequencia faz o sistema
-     * descartar as tarefas dele.
-     *
-     * Desabilitar o pacote tambem limparia os recentes, mas faz a tela inicial
-     * apagar os atalhos, e reabilitar nao os devolve. Suspender e reversivel e
-     * nao toca em atalhos, widgets nem na gaveta de aplicativos. O unsuspend vem
-     * no mesmo comando e e repetido em seguida, para que nenhum app fique
-     * suspenso por acidente.
-     */
     /**
      * Monta o comando que realmente encerra um app e limpa o cartão dele dos
      * recentes.
      *
-     * Sempre manda o usuário para a tela inicial antes do force-stop. Sem
-     * isso, encerrar um app que está aberto na tela naquele instante (por
-     * exemplo, ao tocar a bolha mágica com a Play Store em primeiro plano)
-     * não limpava os recentes: suspender/liberar um app que ainda está em
-     * foco não finaliza a task da mesma forma que suspender um app em
-     * segundo plano. Tirar o foco primeiro faz o comportamento ser sempre
-     * o mesmo, esteja o app na tela ou não.
+     * Sempre manda o usuário para a tela inicial antes do force-stop quando o
+     * alvo está em primeiro plano — sem isso, encerrar um app que está aberto
+     * na tela naquele instante (por exemplo, ao tocar a bolha mágica com a
+     * Play Store em primeiro plano) não limpava os recentes: suspender um app
+     * que ainda está em foco não finaliza a task da mesma forma que suspender
+     * um app em segundo plano.
      */
     private fun comandoEncerrar(packageName: String): String {
         // Só manda para a tela inicial quando o próprio pacote-alvo é o que
@@ -346,32 +405,42 @@ class AppMonitor(
         val encerrar = "am force-stop $packageName"
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return "$irParaHome$encerrar"
 
-        // Remoção direcionada da task nos recentes, quando ela ainda resistir
-        // ao ciclo de suspender/liberar. Procura a entrada cujo campo de
-        // afinidade (`A=`) é o próprio pacote e remove só essa task — nunca a
-        // primeira da lista, que poderia ser de outro aplicativo.
-        val limparRecentes =
-            "am task remove \$(dumpsys activity recents 2>/dev/null | " +
-                "grep \"A=$packageName \" | grep -oE '#[0-9]+' | head -1 | tr -d '#') " +
-                "2>/dev/null || true"
+        // Ordem: force-stop, depois suspender/liberar — sem repetir o
+        // force-stop no final.
+        //
+        // Chegou a existir uma versão que repetia o force-stop depois de
+        // suspender/liberar, só para deixar o botão "Forçar parada" cinza na
+        // tela de Informações do app (puramente cosmético). Essa mudança
+        // causou falhas intermitentes reais em aparelho de verdade — às
+        // vezes o app simplesmente não era encerrado. A comunicação extra
+        // com o Shizuku, uma chamada a mais em sequência, parece introduzir
+        // uma corrida que não existe com a sequência mais simples. Como
+        // encerrar o app de fato é muito mais importante do que o botão
+        // aparecer cinza, a sequência simples e comprovadamente confiável
+        // fica assim, sem o force-stop repetido.
+        val suspenderLiberar =
+            "pm suspend --user 0 $packageName; pm unsuspend --user 0 $packageName"
 
-        // Bloqueado: sem pm suspend. Suspender faz o Android recusar até
-        // abertura manual (é a mensagem "gerenciado pelo app Shell" que
-        // aparece ao tocar o ícone) — isso trava o app por completo, não só
-        // em segundo plano, que nunca foi a intenção do bloqueio. O force-stop
-        // mais as camadas de appops/standby bucket de aplicarBloqueio já
-        // seguram o app fora do segundo plano; o vigia (BlockedAppWatcher)
-        // cuida de reencerrar se ele tentar voltar sozinho.
+        // Bloqueados usam o mesmo comando leve dos apps normais abaixo:
+        // suspender e liberar, sempre — nunca desativar/reativar o pacote.
+        //
+        // Uma tentativa anterior usava desativar/reativar quando o Fecha
+        // Tudo Plus está em segundo plano, pensando em resolver um cartão de
+        // recentes preso em certos aparelhos com Android 13/One UI mais
+        // antigo. O problema: desativar um pacote também apaga o atalho dele
+        // da tela inicial em qualquer launcher — e como o vigia de
+        // bloqueados encerra o app toda vez que ele sai do primeiro plano,
+        // isso apagava o atalho repetidamente, em qualquer aparelho, não só
+        // no que tinha o problema original. Um cartão de recentes preso é
+        // cosmético — o processo é encerrado do mesmo jeito, a restrição de
+        // segundo plano continua valendo. Perder o atalho da tela inicial
+        // toda vez é bem mais grave, então fica assim: sempre o caminho leve.
         if (packageName in pacotesBloqueados) {
-            return "$irParaHome$encerrar; $limparRecentes"
+            return "$irParaHome$encerrar; $suspenderLiberar"
         }
-        // Apps normais: suspender e liberar na sequência é só um empurrão
-        // para o Android esquecer a task nos recentes — dura uma fração de
-        // segundo e o app nunca fica de fato indisponível.
-        return "$irParaHome$encerrar; " +
-            "pm suspend --user 0 $packageName; " +
-            "pm unsuspend --user 0 $packageName; " +
-            limparRecentes
+
+        // Apps normais: mesma sequência.
+        return "$irParaHome$encerrar; $suspenderLiberar"
     }
 
     /**
@@ -520,6 +589,16 @@ class AppMonitor(
 
         /** Janela de consulta para descobrir o app em primeiro plano. Ver [currentForegroundPackage]. */
         const val JANELA_PRIMEIRO_PLANO_MS = 24 * 60 * 60 * 1_000L
+
+        /**
+         * Extrai o nome do pacote da linha `mCurrentFocus` do `dumpsys window`.
+         * Formato típico: `mCurrentFocus=Window{... u0 com.exemplo/com.exemplo.MainActivity}`.
+         * Esse padrão (usuário seguido do pacote antes da barra) é estável
+         * entre praticamente todas as versões do Android, incluindo as
+         * customizações de fabricante — é a mesma técnica usada por
+         * ferramentas de automação de testes há anos.
+         */
+        val FOCO_JANELA = Regex("""u\d+\s+([a-zA-Z0-9_.]+)/""")
 
         /** Tempo entre encerrar e conferir se o processo realmente sumiu. */
         const val VERIFICACAO_MS = 350L

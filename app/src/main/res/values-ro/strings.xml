@@ -244,13 +244,27 @@
     <string name="whats_new_title">Noutăți în versiunea %s</string>
     <string name="whats_new_confirm">Am înțeles</string>
     <string-array name="whats_new_items">
-        <item>Nou: fila Înghețate — dezactivează complet aplicațiile, mai puternic decât blocarea, fără să consume memorie.</item>
-        <item>Rezolvat: aplicațiile blocate nu se mai închid în timp ce le folosești.</item>
-        <item>Rezolvat: blocarea unei aplicații nu mai împiedică deschiderea ei manuală.</item>
-        <item>Notificarea fixă apare doar când este activată și revine singură dacă este ștearsă din greșeală.</item>
-        <item>Bulă plutitoare: opacitate și dimensiune reglabile, poziție salvată și buton de resetare.</item>
-        <item>Portofelele digitale (Samsung Wallet, Google Wallet, Nubank, PicPay...) sunt protejate implicit.</item>
-        <item>Shizuku se reconectează automat dacă legătura se pierde.</item>
-        <item>Îmbunătățiri generale de performanță și viteză la închiderea aplicațiilor blocate.</item>
+        <item>Nou: Mod câine de pază — supraveghează serviciile în permanență și le repornește imediat ce ecranul se aprinde, menținând blocarea funcțională chiar și după ce Android închide ceva în fundal. Activat implicit (Setări).</item>
+        <item>Nou: întârziere per aplicație în Blocate — glisează o aplicație blocată spre stânga pentru a seta o marjă (secunde sau minute) înainte de închidere, util pentru a partaja sau copia rapid ceva.</item>
+        <item>Rezolvat: aplicațiile uneori nu se închideau în fundal sau nu dispăreau din recente la minimizarea unei aplicații blocate.</item>
+        <item>Rezolvat: închiderea unei aplicații blocate direct din ecranul de aplicații recente o oprește acum și ea în mod fiabil.</item>
+        <item>Rezolvat: aplicația se reconectează mai fiabil la Shizuku după blocarea și deblocarea ecranului.</item>
+        <item>Notificările, suprapunerea, accesul la utilizare și scutirea de baterie sunt acum acordate automat imediat ce Shizuku este activat la configurarea inițială.</item>
     </string-array>
+    <string name="onboarding_shizuku_auto_hint">Sfat: activarea Shizuku mai întâi acordă automat toate permisiunile de mai jos — nu trebuie să treci prin fiecare.</string>
+    <string name="watchdog_mode">Mod câine de pază</string>
+    <string name="watchdog_mode_desc">Repornește serviciile chiar în momentul în care ecranul se aprinde, fără să aștepte verificarea periodică. Ajută pe aparate care închid agresiv aplicațiile din fundal.</string>
+    <string name="blocked_delay_hint">Nou: glisează o aplicație blocată spre stânga pentru a seta o întârziere înainte de a o închide — util când ai nevoie de câteva secunde pentru a partaja sau copia ceva.</string>
+    <string name="blocked_delay_set">Setează întârzierea</string>
+    <string name="blocked_delay_edit">Întârziere setată: %s. Atinge pentru a schimba sau elimina.</string>
+    <string name="blocked_delay_dialog_title">Întârziere pentru %s</string>
+    <string name="blocked_delay_dialog_body">În loc să închidă imediat ce iese din prim-plan, așteaptă acest timp înainte. Dacă revii înainte de asta, numărătoarea se resetează.</string>
+    <string name="blocked_delay_value_label">Cantitate</string>
+    <string name="blocked_delay_remove">Elimină întârzierea</string>
+    <string name="delay_unit_seconds">Sec</string>
+    <string name="delay_unit_minutes">Min</string>
+    <string name="delay_unit_hours">Ore</string>
+    <string name="save">Salvează</string>
+    <string name="about_watchdog_title">Mod câine de pază</string>
+    <string name="about_watchdog">Supraveghează activ propriile servicii ale aplicației și le repornește chiar în momentul în care ecranul se aprinde sau se deblochează, în loc să aștepte o verificare periodică. Asta menține blocarea funcțională chiar și după ce Android închide procese din fundal pentru a economisi memorie sau baterie — ceva ce fac frecvent producătorii mai agresivi. Activat implicit; dezactivează-l din Setări dacă preferi să te bazezi doar pe verificarea periodică, mai lentă.</string>
 </resources>
