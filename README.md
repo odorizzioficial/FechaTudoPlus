@@ -27,6 +27,7 @@ Aplicativos que devem parar assim que saem da tela.
 - Recebe a **restrição profunda de segundo plano** — o mesmo que o Android aplica em "Bateria > Restrito". É isso que impede o app de se religar sozinho.
 - Tudo é revertido ao desbloquear.
 - Um app pode estar em Restritos e Bloqueados ao mesmo tempo: protegido do Fechar Tudo, mas encerrado ao sair do primeiro plano.
+- **Atraso configurável por app**: arraste um cartão para a esquerda e defina uma margem em segundos ou minutos antes do encerramento — útil para compartilhar ou copiar algo rapidamente sem perder o bloqueio. Um toque no relógio que aparece no cartão ajusta ou remove esse atraso quando quiser.
 
 ## 📅 Agendar
 
@@ -39,6 +40,14 @@ Aplicativos que devem parar assim que saem da tela.
 ## 🔲 Bloco de Acesso Rápido
 
 Um bloco nas Configurações Rápidas do Android encerra os apps em execução direto da barra de notificações, sem abrir o aplicativo. As mesmas proteções valem: restritos, tela inicial e o próprio app ficam de fora.
+
+## 🐕 Modo Cão de Guarda
+
+Mantém o app funcionando de forma confiável mesmo em aparelhos que matam serviços em segundo plano de forma agressiva.
+
+- Relança os serviços essenciais na hora em que a tela liga ou é desbloqueada, sem esperar uma checagem periódica.
+- Reage também se o próprio app for arrastado para fora da tela de recentes.
+- Vem **ligado por padrão**; pode ser desativado nas Configurações.
 
 ## 🌍 10 idiomas
 
@@ -53,6 +62,8 @@ O idioma inicial vem do aparelho. A troca é instantânea, sem reiniciar a tela:
 - Barra inferior flutuante com **vidro líquido de verdade**: refração SDF, dispersão cromática e brilho que acompanha a inclinação do aparelho.
 - Navegação por deslize entre as abas.
 - Ícone com selo indicando quais apps são do sistema.
+- Modo imersivo: a barra de navegação do sistema fica escondida ao usar o app.
+- Um resumo do que mudou aparece automaticamente a cada nova versão instalada.
 
 ## 📱 Compatibilidade
 
@@ -71,6 +82,8 @@ O Android não permite que um app comum leia processos de outros aplicativos nem
 Compatível com **Shizuku**, **Shizuku Plus**, **Shevery** e **Sui** — a detecção é feita pelo serviço em execução, não pelo nome do pacote, então qualquer derivado que implemente a API funciona.
 
 Sem ele o app continua funcionando, mas o Android limita a leitura de processos e o encerramento. A tela avisa quando isso acontece, em vez de simular funcionamento.
+
+Depois que o Shizuku é autorizado, o app concede sozinho, via shell, as demais permissões que dependeriam de telas separadas do Android — notificações, sobrepor outros apps, acesso de uso e a isenção de bateria — sem precisar passar por cada uma manualmente.
 
 ## 🔒 Privacidade
 
